@@ -1,0 +1,9 @@
+{
+  "files.associations": {
+    "*.patch": "diff",
+    "*.tcc": "cpp",
+    "string.h": "c",
+    "mouse.h": "c"
+  },
+  "cmake.configureOnOpen": true
+}
