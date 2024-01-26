@@ -5,11 +5,6 @@ import os.path
 import errno
 
 
-if os.name == 'nt':
-    subprocess.run("pip3 -q install kconfiglib windows-curses")
-else:
-    subprocess.run("pip3 -q install kconfiglib", shell=True)
-
 # Taken from https://stackoverflow.com/a/600612/119527
 def mkdir_p(path):
     try:
@@ -20,6 +15,9 @@ def mkdir_p(path):
         else: raise
 
 def menuconfig_callback(*arg, **kwargs):
+
+    subprocess.run("pip3 -q install kconfiglib", shell=True)
+
     # save_settings = "include/lvgl.config";
     # output_header_file = "include/lvgl.h"
     comment_header = "Configured by Dror Gluska"
@@ -31,7 +29,6 @@ def menuconfig_callback(*arg, **kwargs):
     mkdir_p(os.path.dirname(save_settings))
     mkdir_p(os.path.dirname(output_header_file))
 
-
     comment = [line.strip() for line in comment_header.splitlines()]
     comment = [line for line in comment if line]
     print("Executing kconfig",config_file,save_settings, output_header_file )
@@ -42,12 +39,11 @@ def menuconfig_callback(*arg, **kwargs):
     envlist["KCONFIG_AUTOHEADER"] = output_header_file
     envlist["KCONFIG_AUTOHEADER_HEADER"] = "// " + "\n// ".join(comment) + "\n"
 
-    if os.name == 'nt':
-        subprocess.call(["menuconfig", config_file], env=envlist, creationflags=subprocess.CREATE_NEW_CONSOLE)
-    else:
-        subprocess.call(["menuconfig", config_file], env=envlist)
+    result = subprocess.check_output("python -c 'import site; print(site.getsitepackages()[0])'", shell=True)
+    packages_dir=result.decode("utf-8").strip()
 
-    genconfig_command = ["genconfig", "--header-path", output_header_file, config_file];
+    subprocess.call(["python3", packages_dir + "/menuconfig.py", config_file], env=envlist)
+    genconfig_command = ["python3", packages_dir + "/genconfig.py", "--header-path", output_header_file, config_file];
     print(" ".join(genconfig_command))
     subprocess.call(genconfig_command, env=envlist)
 

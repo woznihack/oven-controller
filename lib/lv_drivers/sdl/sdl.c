@@ -7,6 +7,8 @@
  *      INCLUDES
  *********************/
 #include "sdl.h"
+
+#define CUSTOM_FLAG_SDL_IN_LIBRARY_IMPORTED
 #if USE_MONITOR || USE_SDL
 
 #if LV_USE_GPU_SDL

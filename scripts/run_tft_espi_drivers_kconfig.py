@@ -15,32 +15,16 @@ def mkdir_p(path):
         else: raise
 
 def menuconfig_callback(*arg, **kwargs):
-
     subprocess.run("pip3 -q install kconfiglib", shell=True)
 
-    # save_settings = "include/lvgl.config";
-    # output_header_file = "include/lvgl.h"
-    comment_header = "Configured by Dror Gluska"
-    config_file = "lib/lvgl/Kconfig"
+    comment_header = "Configured by Wozmind"
+    config_file = "lib/TFT_eSPI/Kconfig"
 
-    include_header = """
-#ifndef LV_CONF_H
-#define LV_CONF_H
-#endif
-
-"""
-
-    save_settings = env.GetProjectOption("custom_lvgl_kconfig_save_settings", "");
-    output_header_file = env.GetProjectOption("custom_lvgl_kconfig_output_header", "")
-
-    include_headers_string = env.GetProjectOption("custom_lvgl_kconfig_include_headers", "")
-    include_headers = [line.strip() for line in include_headers_string.splitlines()]
-    include_headers = [line for line in include_headers if line]
-    include_headers = ["#include \"" + line + "\"" for line in include_headers]
+    save_settings = env.GetProjectOption("custom_tft_espi_drivers_kconfig_save_settings", "");
+    output_header_file = env.GetProjectOption("custom_tft_espi_drivers_kconfig_output_header", "")
 
     mkdir_p(os.path.dirname(save_settings))
     mkdir_p(os.path.dirname(output_header_file))
-
 
     comment = [line.strip() for line in comment_header.splitlines()]
     comment = [line for line in comment if line]
@@ -50,20 +34,20 @@ def menuconfig_callback(*arg, **kwargs):
     envlist["KCONFIG_CONFIG"] = save_settings
     envlist["KCONFIG_CONFIG_HEADER"] = "#" + "\n#".join(comment) + "\n"
     envlist["KCONFIG_AUTOHEADER"] = output_header_file
-    envlist["KCONFIG_AUTOHEADER_HEADER"] = "// " + "\n// ".join(comment) + "\n"  + include_header + "\n".join(include_headers) + "\n\n"
+    envlist["KCONFIG_AUTOHEADER_HEADER"] = "// " + "\n// ".join(comment) + "\n"
 
     result = subprocess.check_output("python -c 'import site; print(site.getsitepackages()[0])'", shell=True)
     packages_dir=result.decode("utf-8").strip()
 
     subprocess.call(["python3", packages_dir + "/menuconfig.py", config_file], env=envlist)
-    genconfig_command = ["python3", packages_dir + "/genconfig.py", "--header-path", output_header_file, config_file];
+    genconfig_command = ["python3", packages_dir + "/genconfig.py", "--header-path", output_header_file, config_file]
     print(" ".join(genconfig_command))
     subprocess.call(genconfig_command, env=envlist)
 
 
 env.AddCustomTarget(
-    "lvgl-config",
+    "tft-espi-drivers-config",
     None,
     menuconfig_callback,
-    title="lvgl-config",
-    description="Executes lvgl config")
+    title="tft-espi-drivers-config",
+    description="Executes TFT_eSPI drivers config")

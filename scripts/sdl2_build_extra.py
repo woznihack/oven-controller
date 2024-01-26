@@ -14,7 +14,7 @@ AlwaysBuild(env.Alias("upload", exec_name, exec_name))
 
 # Add custom target to explorer
 env.AddTarget(
-    name = "execute",
+    name = "buildsdl",
     dependencies = exec_name,
     actions = exec_name,
     title = "Execute",

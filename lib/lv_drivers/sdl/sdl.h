@@ -46,6 +46,7 @@ extern "C" {
  */
 void sdl_init(void);
 
+#define CUSTOM_FLAG_SDL_IN_HEADER_IMPORTED
 /**
  * Flush a buffer to the marked area
  * @param disp_drv pointer to driver where this function belongs

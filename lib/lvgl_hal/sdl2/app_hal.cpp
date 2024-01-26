@@ -1,4 +1,6 @@
+#if defined(_WIN64) || defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
 
+#include "app_hal.h"
 #include <unistd.h>
 #define SDL_MAIN_HANDLED        /*To fix SDL's "undefined reference to WinMain" issue*/
 #include <SDL2/SDL.h>
@@ -8,7 +10,6 @@
 #include <indev/keyboard.h>
 #include <sdl/sdl.h>
 // #include <lvgl.h>
-
 
 /**
  * A task to measure the elapsed time for LittlevGL
@@ -76,3 +77,5 @@ void hal_loop(void)
         SDL_Delay(delay);
     }
 }
+
+#endif
