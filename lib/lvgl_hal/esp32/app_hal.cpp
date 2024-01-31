@@ -1,11 +1,12 @@
 #if defined(ESP_PLATFORM) || defined(ARDUINO)
 
-#include "app_hal.h"
 #include <lvgl.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_task_wdt.h>
 #include <TFT_eSPI.h>
+
+#include "app_hal.h"
 
 #define LV_TICK_PERIOD_MS 1
 
@@ -50,10 +51,10 @@ void hal_setup(void)
   ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
   ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, LV_TICK_PERIOD_MS * 1000));
   tft.begin();
-  tft.setRotation(1);
+  tft.setRotation(0);
 
-  // uint16_t touchCalibrationData[5] = { 338, 3525, 452, 3233, 6 }; // 240x320 rotation 0
-  uint16_t touchCalibrationData[5] = {463, 3451, 348, 3511, 3}; // 240x320 rotation 1
+  uint16_t touchCalibrationData[5] = { 338, 3525, 452, 3233, 6 }; // 240x320 rotation 0
+  // uint16_t touchCalibrationData[5] = {463, 3451, 348, 3511, 3}; // 240x320 rotation 1
   // uint16_t touchCalibrationData[5] = { 317, 3540, 441, 3467, 0 }; // 240x320 rotation 2
   // uint16_t touchCalibrationData[5] = { 440, 3242, 340, 3305, 5 }; // 240x320 rotation 3
   tft.setTouch(touchCalibrationData);
