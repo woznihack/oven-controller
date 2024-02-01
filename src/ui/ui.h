@@ -2,12 +2,13 @@
 #define UI_H
 
 #include <lvgl.h>
+#include "queue.h"
 
-extern lv_obj_t *main_screen;
-extern lv_obj_t *main_screen_button;
 extern const lv_img_dsc_t logo;
 
+extern q_queue_t * oven_queue;
+extern q_queue_t * ui_queue;
+
 void ui_init(void);
-void set_grid_btn_cb(int idx, lv_event_cb_t cb);
 
 #endif // UI_H
