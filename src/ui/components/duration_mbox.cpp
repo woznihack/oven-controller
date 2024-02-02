@@ -3,7 +3,7 @@
 #include "../helpers.h"
 #include "../messages.h"
 
-static counter_t duration = counter_create(1);
+static counter_t duration;
 static lv_obj_t *hours_lb;
 static lv_obj_t *minutes_lb;
 
@@ -11,17 +11,11 @@ static void btn_cb(lv_event_t *);
 static void increment_cb(lv_event_t *);
 static void decrement_cb(lv_event_t *);
 
-
-
-void duration_mbox_open_cb(lv_event_t *e){
-  LV_UNUSED(e);
-  duration_mbox_open();
-}
-
-void duration_mbox_open()
+void duration_mbox_open(uint32_t initial_value)
 {
+  duration = counter_create(initial_value);
 
-  static const char *btns[] = {"Okay", ""};
+  static const char *btns[] = {"Apply", "Cancel", ""};
   lv_obj_t *mbox = lv_msgbox_create(NULL, NULL, NULL, btns, false);
   lv_obj_t *mbox_content = lv_msgbox_get_content(mbox);
 
@@ -70,7 +64,11 @@ void duration_mbox_open()
 
 void btn_cb(lv_event_t *e)
 {
-  lv_msg_send(MSG_DURATON_MINUTES_T_CHANGED, duration.value);
+  lv_obj_t * obj = lv_event_get_current_target(e);
+  const char * btn_text = lv_msgbox_get_active_btn_text(obj);
+  if (strcmp(btn_text, "Apply") == 0) {
+    lv_msg_send(MSG_SET_CONF_DURATION_M, duration.value);
+  }
   lv_msgbox_close(lv_event_get_current_target(e));
 }
 

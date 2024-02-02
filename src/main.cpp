@@ -29,16 +29,12 @@ MAIN()
 
     /*Initialize the HAL (display, input devices, tick) for LVGL*/
     hal_setup();
-
-
     ui_init();
-
 
     pthread_create(&controller_thread, NULL, controller_thread_function, NULL);
 
     hal_loop(); // can only be called by main thread
 
     pthread_join( controller_thread, NULL);
-
     return 0;
 }

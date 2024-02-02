@@ -31,12 +31,32 @@ lv_anim_enable_t time_separator_anim_status = LV_ANIM_OFF;
 static lv_style_t main_style;
 static lv_style_t alpha_bg_style;
 
-char programName[] = "manual program";
-bool started = false;
-int temperature = 10;
-int remainingMinutes = 10;
-int setTemperature = 10;
-int setDurationMinutes = 10;
+
+struct Status {
+  bool started;
+  uint32_t remaining_m;
+  uint32_t top_heater_temp;
+  uint32_t bot_heater_temp;
+};
+
+struct Settings {
+  char *program_name;
+  uint32_t temperature;
+  uint32_t duration_m;
+};
+
+static struct Status status = {
+  .started = true,
+  .remaining_m = 10,
+  .top_heater_temp = 10,
+  .bot_heater_temp = 10
+};
+
+static struct Settings settings = {
+  .program_name = "Manual",
+  .temperature = 20,
+  .duration_m = 20,
+};
 
 // prototypes
 void splash_screen_init();
@@ -48,6 +68,9 @@ void stop_alpha_animation(lv_anim_enable_t *status, lv_obj_t *obj, lv_anim_exec_
 void styles_init();
 void handle_queue();
 
+void duration_container_event_cb(lv_event_t *e);
+void temperature_container_event_cb(lv_event_t *e);
+
 void start_program(lv_event_t *t)
 {
   double payload = 4.5;
@@ -58,17 +81,9 @@ void end_program(lv_event_t *t)
   q_enqueue(oven_queue, OVEN_STOP, NULL);
 }
 
-void duration_changed_cb(void *, lv_msg_t *m){
-  printf("Duration changed cb called.. \n");
-  if (lv_msg_get_id(m) == MSG_DURATON_MINUTES_T_CHANGED){
-    const uint32_t * duration_m = (uint32_t *)lv_msg_get_payload(m);
-    printf("..for the duration %d\n", *duration_m);
-  }
-}
 
 void ui_init(void)
 {
-  lv_msg_subscribe(MSG_DURATON_MINUTES_T_CHANGED, duration_changed_cb, NULL);
 
 
   splash_screen_init();
@@ -113,20 +128,6 @@ void splash_screen_init()
   lv_obj_align(logo_img, LV_ALIGN_CENTER, 0, -20);
 }
 
-void program_name_cb(lv_event_t *e)
-{
-  lv_obj_t *label = lv_event_get_target(e);
-  lv_event_code_t code = lv_event_get_code(e);
-  if (code == LV_EVENT_MSG_RECEIVED)
-  {
-    lv_msg_t *m = lv_event_get_msg(e);
-    if (lv_msg_get_id(m) == MSG_OVEN_STARTED || lv_msg_get_id(m) == MSG_OVEN_STOPPED)
-    {
-      lv_label_set_text_fmt(label, "%s", started ? "started" : "stopped");
-    }
-  }
-}
-
 void draw_items()
 {
   main_screen = lv_obj_create(NULL);
@@ -161,9 +162,7 @@ void draw_items()
   lv_obj_t *program_name = lv_label_create(top_panel);
   lv_obj_add_style(program_name, &main_style, 0);
   lv_obj_add_style(program_name, &alpha_bg_style, 0);
-  lv_label_set_text_fmt(program_name, "%s", programName);
-  lv_msg_subsribe_obj(MSG_OVEN_STARTED, program_name, NULL);
-  lv_obj_add_event_cb(program_name, program_name_cb, LV_EVENT_ALL, NULL);
+  lv_label_set_text_fmt(program_name, "%s", settings.program_name);
 
   time_container = lv_obj_create(top_panel);
   lv_obj_center(time_container);
@@ -172,7 +171,10 @@ void draw_items()
   lv_obj_clear_flag(time_container, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_size(time_container, 70, 32);
   lv_obj_set_style_outline_width(time_container, 1, LV_STATE_DEFAULT);
-  lv_msg_subscribe_obj(MSG_DURATON_MINUTES_T_CHANGED, time_container, NULL);
+  lv_obj_add_flag(time_container, LV_OBJ_FLAG_CLICKABLE);
+  lv_msg_subscribe_obj(MSG_SET_CONF_DURATION_M, time_container, NULL);
+  lv_obj_add_event_cb(time_container, duration_container_event_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(time_container, duration_container_event_cb, LV_EVENT_MSG_RECEIVED, NULL);
 
   time_h_lb = lv_label_create(time_container);
   lv_obj_set_style_text_font(time_h_lb, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -186,7 +188,7 @@ void draw_items()
   lv_obj_set_style_text_font(time_m_lb, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_text_align(time_h_lb, LV_TEXT_ALIGN_LEFT, 0);
 
-  time_update_lb(setDurationMinutes, time_h_lb, time_m_lb);
+  time_update_lb(settings.duration_m, time_h_lb, time_m_lb);
 
   lv_obj_align(time_m_lb, LV_ALIGN_RIGHT_MID, 0, 0);
   lv_obj_align_to(time_separator_lb, time_m_lb, LV_ALIGN_OUT_LEFT_MID, 0, 0);
@@ -195,8 +197,13 @@ void draw_items()
   /* middle panel content */
   temp_lb = lv_label_create(middle_panel);
   lv_obj_center(temp_lb);
-  lv_label_set_text_fmt(temp_lb, "%d", setTemperature);
+  lv_label_set_text_fmt(temp_lb, "%d °C", settings.temperature);
   lv_obj_set_style_text_font(temp_lb, &lv_font_montserrat_48, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_flag(temp_lb, LV_OBJ_FLAG_CLICKABLE);
+  lv_msg_subscribe_obj(MSG_SET_CONF_TEMP, temp_lb, NULL);
+  lv_obj_add_event_cb(temp_lb, temperature_container_event_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(temp_lb, temperature_container_event_cb, LV_EVENT_MSG_RECEIVED, NULL);
+
 
   /* bottom panel content */
   static lv_coord_t col_dsc[] = {60, 60, 60, 60, LV_GRID_TEMPLATE_LAST};
@@ -240,23 +247,47 @@ void draw_items()
   set_grid_btn_cb(1, end_program);
 }
 
-void time_container_event_cb(lv_event_t *e)
+void duration_container_event_cb(lv_event_t *e)
 {
 
-  printf("time_container_event_cb called...");
+  printf("duration_container_event_cb called...");
   lv_event_code_t code = lv_event_get_code(e);
   if (code == LV_EVENT_CLICKED){
 
     printf(".. for a click!\n");
-    duration_mbox_open();
+    duration_mbox_open(settings.duration_m);
   }
   else if (code == LV_EVENT_MSG_RECEIVED){
     printf(".. for a message!\n");
     lv_msg_t * m = lv_event_get_msg(e);
     // lv_obj_t * target = lv_event_get_target(e);
-    if (lv_msg_get_id(m) == MSG_DURATON_MINUTES_T_CHANGED){
-      const uint32_t * duration_m = (uint32_t *)lv_msg_get_payload(m);
-      time_update_lb(*duration_m, time_h_lb, time_m_lb);
+    if (lv_msg_get_id(m) == MSG_SET_CONF_DURATION_M){
+      settings.duration_m = *(uint32_t *)lv_msg_get_payload(m);
+      time_update_lb(settings.duration_m, time_h_lb, time_m_lb);
+    }
+  }
+  else {
+    printf("\n");
+  }
+}
+
+void temperature_container_event_cb(lv_event_t *e)
+{
+
+  printf("temperature_container_event_cb called...");
+  lv_event_code_t code = lv_event_get_code(e);
+  if (code == LV_EVENT_CLICKED){
+
+    printf(".. for a click!\n");
+    temperature_mbox_open(settings.temperature);
+  }
+  else if (code == LV_EVENT_MSG_RECEIVED){
+    printf(".. for a message!\n");
+    lv_msg_t * m = lv_event_get_msg(e);
+    // lv_obj_t * target = lv_event_get_target(e);
+    if (lv_msg_get_id(m) == MSG_SET_CONF_TEMP){
+      settings.temperature = *(uint32_t *)lv_msg_get_payload(m);
+      lv_label_set_text_fmt(temp_lb, "%d °C", settings.temperature);
     }
   }
   else {
@@ -266,12 +297,7 @@ void time_container_event_cb(lv_event_t *e)
 
 void attach_event_handlers()
 {
-  lv_obj_add_flag(time_container, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_add_event_cb(time_container, time_container_event_cb, LV_EVENT_CLICKED, NULL);
-  lv_obj_add_event_cb(time_container, time_container_event_cb, LV_EVENT_MSG_RECEIVED, NULL);
 
-  lv_obj_add_flag(temp_lb, LV_OBJ_FLAG_CLICKABLE);
-  lv_obj_add_event_cb(temp_lb, temperature_mbox_open, LV_EVENT_CLICKED, NULL);
 }
 
 void main_screen_init()
@@ -283,17 +309,17 @@ void main_screen_init()
 
 void main_screen_update(lv_timer_t *timer)
 {
-  handle_queue();
-  lv_label_set_text_fmt(temp_lb, "%d", setTemperature);
-  if (started)
-  {
-    start_alpha_animation(&time_separator_anim_status, time_separator_lb, anim_alpha_cb, 1000, 200);
-    time_update_lb(remainingMinutes, time_h_lb, time_m_lb);
-  }
-  else
-  {
-    stop_alpha_animation(&time_separator_anim_status, time_separator_lb, anim_alpha_cb);
-  }
+  // handle_queue();
+  // lv_label_set_text_fmt(temp_lb, "%d", setTemperature);
+  // if (started)
+  // {
+  //   start_alpha_animation(&time_separator_anim_status, time_separator_lb, anim_alpha_cb, 1000, 200);
+  //   time_update_lb(remainingMinutes, time_h_lb, time_m_lb);
+  // }
+  // else
+  // {
+  //   stop_alpha_animation(&time_separator_anim_status, time_separator_lb, anim_alpha_cb);
+  // }
 }
 
 void handle_queue()
@@ -312,7 +338,7 @@ void handle_queue()
   //   case UI_UPDATE_REMAINING_MINUTES:
   //     lv_msg_send(MSG_REMAINING_MINUTES_CHANGED, data.payload);
   //   case UI_UPDATE_TEMPERATURE:
-  //     lv_msg_send(MSG_TEMPERATURE_CHANGED, data.payload);
+  //     lv_msg_send(MSG_SET_STATUS_TOP_HEATER_T, data.payload);
   //   default:
   //   }
   // }

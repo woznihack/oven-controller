@@ -4,13 +4,13 @@
 #include <lvgl.h>
 #include "queue.h"
 
-#define MSG_DURATON_MINUTES_T_CHANGED  10
-#define MSG_TEMPERATURE_T_CHANGED      11
-#define MSG_REMAINING_MINUTES_CHANGED  12
-#define MSG_TEMPERATURE_CHANGED        13
+#define MSG_SET_CONF_DURATION_M        10
+#define MSG_SET_CONF_TEMP              11
 
-#define MSG_OVEN_STARTED               20
-#define MSG_OVEN_STOPPED               21
-#define MSG_PROGRAM_PAUSED             21
+#define MSG_SET_STATUS_REMAINING_M     20
+#define MSG_SET_STATUS_TOP_HEATER_TEMP 21
+#define MSG_SET_STATUS_BOT_HEATER_TEMP 22
+#define MSG_SET_STATUS_STARTED         23
+#define MSG_SET_STATUS_STOPPED         24
 
 #endif // MESSAGES_H

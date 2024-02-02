@@ -4,8 +4,8 @@
 #include "lvgl.h"
 
 #define TEMPERATURE_MAX_VALUE 200
-#define TEMPERATURE_MIN_VALUE 50
+#define TEMPERATURE_MIN_VALUE 20
 
-void temperature_mbox_open(lv_event_t *);
+void temperature_mbox_open(uint32_t);
 
 #endif
