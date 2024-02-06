@@ -5,8 +5,31 @@
 counter_t counter_create(uint32_t _value)
 {
   counter_t data;
-  data.value = new uint32_t(_value);
+  data.value = _value;
   return data;
+}
+
+static lv_event_code_t events[] = {
+    LV_EVENT_PRESSED,
+    LV_EVENT_RELEASED,
+    LV_EVENT_CLICKED,
+    LV_EVENT_SHORT_CLICKED,
+    LV_EVENT_PRESSING,
+    LV_EVENT_LONG_PRESSED,
+    LV_EVENT_LONG_PRESSED_REPEAT};
+
+void counter_add_event_cb(lv_obj_t *o, lv_event_cb_t cb, void *user_data)
+{
+  short size = sizeof(events) / sizeof(lv_event_code_t);
+  for (short i = 0; i < size; i++)
+  {
+    lv_obj_add_event_cb(o, cb, events[i], user_data);
+  }
+}
+
+void counter_remove_event_cb(lv_obj_t *o, lv_event_cb_t cb, void *user_data)
+{
+  lv_obj_remove_event_cb_with_user_data(o, cb, user_data);
 }
 
 bool counter_should_change(lv_event_t *e)

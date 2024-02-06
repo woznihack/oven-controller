@@ -20,8 +20,8 @@ q_queue_t * ui_queue;
 
 MAIN()
 {
-    oven_queue = q_create(sizeof(double));
-    ui_queue   = q_create(sizeof(double));
+    oven_queue = q_create(sizeof(char)*10);
+    ui_queue   = q_create(sizeof(char)*10);
 
     /*Initialize LVGL*/
     lv_init();

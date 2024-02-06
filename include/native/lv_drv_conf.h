@@ -96,21 +96,21 @@
 #endif
 
 #if USE_SDL || USE_SDL_GPU
-#  define SDL_HOR_RES     CONFIG_SDL_HOR_RES
-#  define SDL_VER_RES     CONFIG_SDL_VER_RES
+# define SDL_HOR_RES     CONFIG_SDL_HOR_RES
+# define SDL_VER_RES     CONFIG_SDL_VER_RES
 
 /* Scale window by this factor (useful when simulating small screens) */
 #  define SDL_ZOOM        1
 
 /* Used to test true double buffering with only address changing.
  * Use 2 draw buffers, bith with SDL_HOR_RES x SDL_VER_RES size*/
-#  define SDL_DOUBLE_BUFFERED 0
+# define SDL_DOUBLE_BUFFERED 0
 
 /*Eclipse: <SDL2/SDL.h>    Visual Studio: <SDL.h>*/
-#  define SDL_INCLUDE_PATH "SDL2/SDL.h"
+#define SDL_INCLUDE_PATH "SDL2/SDL.h"
 
 /*Open two windows to test multi display support*/
-#  define SDL_DUAL_DISPLAY            0
+#define SDL_DUAL_DISPLAY            0
 #endif
 
 /*-------------------
@@ -123,7 +123,7 @@
 #endif
 
 #if USE_MONITOR
-#  define MONITOR_HOR_RES     480
+#  define MONITOR_HOR_RES     100
 #  define MONITOR_VER_RES     320
 
 /* Scale window by this factor (useful when simulating small screens) */
