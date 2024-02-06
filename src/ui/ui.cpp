@@ -8,29 +8,38 @@
 #include "messages.h"
 #include "screens/screens.h"
 
+// prototypes
+static void handle_ui_queue(lv_timer_t *);
+static void handle_ui_msg(void *s, lv_msg_t *msg);
+
 // styles
 static lv_style_t main_style;
 static lv_style_t alpha_bg_style;
 
-struct Status
-{
-  bool started;
-  uint32_t remaining_m;
-  uint32_t top_heater_temp;
-  uint32_t bot_heater_temp;
-};
-
-static struct Status status = {
-    .started = true,
-    .remaining_m = 10,
-    .top_heater_temp = 10,
-    .bot_heater_temp = 10};
-
 struct Settings settings;
 
-void handle_queue(lv_timer_t *);
+void ui_init(void)
+{
+  settings.program_name = "Manual";
+  settings.temperature = counter_create(BAKING_TEMPERATURE_MIN);
+  settings.duration_m = counter_create(BAKING_DURATION_M_MIN);
 
-void ui_msg_handler(void *s, lv_msg_t *msg)
+  printf("-- UI SETUP --");
+  printf("Setting.temperature = %d\n", settings.temperature.value);
+  printf("Setting.duration_m = %d\n", settings.duration_m.value);
+
+  splash_scr_init();
+  program_setup_scr_init();
+
+  lv_disp_load_scr(splash_scr);
+  lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 1000, true);
+  lv_timer_t *main_screen_update_timer = lv_timer_create(handle_ui_queue, 100, NULL);
+
+  lv_msg_subscribe(MSG_SET_STATUS_STARTED, handle_ui_msg, NULL);
+  lv_msg_subscribe(MSG_SET_STATUS_STOPPED, handle_ui_msg, NULL);
+}
+
+void handle_ui_msg(void *s, lv_msg_t *msg)
 {
   uint32_t id = lv_msg_get_id(msg);
   switch (id)
@@ -54,28 +63,7 @@ void ui_msg_handler(void *s, lv_msg_t *msg)
   }
 }
 
-void ui_init(void)
-{
-  settings.program_name = "Manual";
-  settings.temperature = counter_create(TEMPERATURE_MIN_VALUE);
-  settings.duration_m = counter_create(DURATION_MIN_VALUE);
-
-  printf("-- UI SETUP --");
-  printf("Setting.temperature = %d\n", settings.temperature.value);
-  printf("Setting.duration_m = %d\n", settings.duration_m.value);
-
-  splash_scr_init();
-  program_setup_scr_init();
-
-  lv_disp_load_scr(splash_scr);
-  lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 1000, true);
-  lv_timer_t *main_screen_update_timer = lv_timer_create(handle_queue, 100, NULL);
-
-  lv_msg_subscribe(MSG_SET_STATUS_STARTED, ui_msg_handler, NULL);
-  lv_msg_subscribe(MSG_SET_STATUS_STOPPED, ui_msg_handler, NULL);
-}
-
-void handle_queue(lv_timer_t *timer)
+void handle_ui_queue(lv_timer_t *timer)
 {
   q_node_t data;
   while (q_dequeue(ui_queue, &data))
@@ -104,7 +92,6 @@ void handle_queue(lv_timer_t *timer)
       lv_msg_send(MSG_SET_MONITOR_DECK_HEATER_TEMP, data.payload);
       break;
     }
-    default:
     }
   }
 }

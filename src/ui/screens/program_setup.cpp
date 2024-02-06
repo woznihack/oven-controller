@@ -129,7 +129,7 @@ static void decrement_duration_cb(lv_event_t *e)
   if (counter_should_change(e))
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
-    user_data->value -= (user_data->value <= DURATION_MIN_VALUE) ? 0 : 1;
+    user_data->value -= (user_data->value <= BAKING_DURATION_M_MIN) ? 0 : 1;
     time_update_lb(user_data->value, duration_h_lb, duration_m_lb);
   }
 }
@@ -139,7 +139,7 @@ static void increment_duration_cb(lv_event_t *e)
   if (counter_should_change(e))
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
-    user_data->value += (user_data->value >= DURATION_MAX_VALUE) ? 0 : 1;
+    user_data->value += (user_data->value >= BAKING_DURATION_M_MAX) ? 0 : 1;
     time_update_lb(user_data->value, duration_h_lb, duration_m_lb);
   }
 }
@@ -149,7 +149,7 @@ static void decrement_temp_cb(lv_event_t *e)
   if (counter_should_change(e))
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
-    user_data->value -= (user_data->value <= TEMPERATURE_MIN_VALUE) ? 0 : 1;
+    user_data->value -= (user_data->value <= BAKING_TEMPERATURE_MIN) ? 0 : 1;
     lv_label_set_text_fmt(temp_lb, "%d °C", user_data->value);
   }
 }
@@ -159,7 +159,7 @@ static void increment_temp_cb(lv_event_t *e)
   if (counter_should_change(e))
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
-    user_data->value += (user_data->value >= TEMPERATURE_MAX_VALUE) ? 0 : 1;
+    user_data->value += (user_data->value >= BAKING_TEMPERATURE_MAX) ? 0 : 1;
     lv_label_set_text_fmt(temp_lb, "%d °C", user_data->value);
   }
 }

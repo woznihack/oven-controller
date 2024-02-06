@@ -2,11 +2,11 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
+// #include <stdio.h>
+// #include <stdlib.h>
+// #include <stdbool.h>
 #include <pthread.h>
-#include <string.h>
+// #include <string.h>
 
 typedef enum {
   OVEN_START,
