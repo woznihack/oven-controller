@@ -32,7 +32,7 @@ void ui_init(void)
   program_setup_scr_init();
 
   lv_disp_load_scr(splash_scr);
-  lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_FADE_ON, 1000, 1000, true);
+  lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 200, true);
   lv_timer_t *main_screen_update_timer = lv_timer_create(handle_ui_queue, 100, NULL);
 
   lv_msg_subscribe(MSG_SET_STATUS_STARTED, handle_ui_msg, NULL);

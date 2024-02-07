@@ -71,48 +71,58 @@ void program_setup_scr_init(){
 
   temp_container = lv_obj_create(program_setup_scr);
   lv_obj_set_size(temp_container, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-  lv_obj_set_pos(temp_container, lv_pct(5), lv_pct(20));
 
   temp_dec_btn = lv_btn_create(temp_container);
+  temp_inc_btn = lv_btn_create(temp_container);
+  temp_lb = lv_label_create(temp_container);
+
   lv_obj_t *temp_dec_btn_lb = lv_label_create(temp_dec_btn);
   lv_label_set_text_fmt(temp_dec_btn_lb, "-");
 
-  temp_inc_btn = lv_btn_create(temp_container);
   lv_obj_t *temp_inc_btn_lb = lv_label_create(temp_inc_btn);
   lv_label_set_text_fmt(temp_inc_btn_lb, "+");
 
-  temp_lb = lv_label_create(temp_container);
-
-
-  lv_obj_align(temp_lb, LV_ALIGN_LEFT_MID, 0, 0);
-  lv_obj_align_to(temp_dec_btn, temp_lb, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
-  lv_obj_align_to(temp_inc_btn, temp_dec_btn, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+  lv_obj_align(temp_dec_btn, LV_ALIGN_LEFT_MID, 0, 0);
+  lv_obj_align_to(temp_lb, temp_dec_btn, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+  lv_obj_align_to(temp_inc_btn, temp_lb, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
 
   duration_container = lv_obj_create(program_setup_scr);
   lv_obj_set_size(duration_container, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-  lv_obj_set_pos(duration_container, lv_pct(5), lv_pct(40));
 
-  duration_h_lb = lv_label_create(duration_container);
+  lv_obj_set_pos(temp_container, lv_pct(5), lv_pct(40));
+  lv_obj_set_pos(duration_container, lv_pct(60), lv_pct(40));
+
+  lv_obj_t *duration_lb_container = lv_label_create(duration_container);
+
+  duration_h_lb = lv_label_create(duration_lb_container);
+  duration_m_lb = lv_label_create(duration_lb_container);
+  duration_separator_lb = lv_label_create(duration_lb_container);
+
+  lv_obj_set_size(duration_container, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+
   lv_obj_set_style_text_align(duration_h_lb, LV_TEXT_ALIGN_RIGHT, LV_STATE_DEFAULT);
-  duration_m_lb = lv_label_create(duration_container);
-  duration_separator_lb = lv_label_create(duration_container);
 
   time_update_lb(settings.duration_m.value, duration_h_lb, duration_m_lb);
   lv_label_set_text_fmt(duration_separator_lb, ":");
 
   duration_dec_btn = lv_btn_create(duration_container);
+  duration_inc_btn = lv_btn_create(duration_container);
+
   lv_obj_t *duration_dec_btn_lb = lv_label_create(duration_dec_btn);
   lv_label_set_text_fmt(duration_dec_btn_lb, "-");
 
-  duration_inc_btn = lv_btn_create(duration_container);
   lv_obj_t *duration_inc_btn_lb = lv_label_create(duration_inc_btn);
   lv_label_set_text_fmt(duration_inc_btn_lb, "+");
+
+
+  lv_obj_align(duration_dec_btn, LV_ALIGN_LEFT_MID, 0, 0);
+  lv_obj_align_to(duration_lb_container, duration_dec_btn, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+  lv_obj_align_to(duration_inc_btn, duration_lb_container, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
+
 
   lv_obj_align(duration_h_lb, LV_ALIGN_LEFT_MID, 0, 0);
   lv_obj_align_to(duration_separator_lb, duration_h_lb, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
   lv_obj_align_to(duration_m_lb, duration_separator_lb, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
-  lv_obj_align_to(duration_dec_btn, duration_m_lb, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
-  lv_obj_align_to(duration_inc_btn, duration_dec_btn, LV_ALIGN_OUT_RIGHT_MID, 0, 0);
 
   lv_obj_t *btns_container = lv_obj_create(program_setup_scr);
   lv_obj_set_size(btns_container, lv_pct(100), LV_SIZE_CONTENT);
