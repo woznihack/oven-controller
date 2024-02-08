@@ -20,7 +20,8 @@
     "streambuf": "cpp",
     "tuple": "cpp",
     "type_traits": "cpp",
-    "cmath": "cpp"
+    "cmath": "cpp",
+    "cstdint": "c"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }
