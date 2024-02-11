@@ -26,7 +26,7 @@ void ui_init(void)
   baking_scr_init();
 
   lv_disp_load_scr(splash_scr);
-  lv_scr_load_anim(baking_scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 200, true);
+  lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 200, true);
   lv_timer_t *main_screen_update_timer = lv_timer_create(handle_ui_queue, 100, NULL);
   lv_msg_subscribe(MSG_SET_STATUS_STARTED, handle_ui_msg, NULL);
   lv_msg_subscribe(MSG_SET_STATUS_STOPPED, handle_ui_msg, NULL);
@@ -38,6 +38,7 @@ void handle_ui_msg(void *s, lv_msg_t *msg)
   switch (id)
   {
   case MSG_SET_STATUS_STARTED:
+  {
     if (baking_scr == NULL)
     {
       baking_scr_init();
@@ -49,6 +50,7 @@ void handle_ui_msg(void *s, lv_msg_t *msg)
     q_enqueue(oven_queue, OVEN_SET_BAKING_STEPS, &program.steps);
     q_enqueue(oven_queue, OVEN_START, NULL);
     break;
+  }
   case MSG_SET_STATUS_STOPPED:
     // lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 300, false);
     q_enqueue(oven_queue, OVEN_STOP, NULL);
@@ -64,7 +66,9 @@ void handle_ui_queue(lv_timer_t *timer)
   while (q_dequeue(ui_queue, &data))
   {
     if (data.event == UI_UPDATE_OVEN_DATA) {
-      // do update oven data
+      oven_monitor.data = *(oven_data_t *)data.payload;
+      oven_monitor.ready = true;
+      lv_msg_send(MSG_SET_OVEN_MONITOR_DATA, NULL);
     }
   }
 }

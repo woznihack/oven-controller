@@ -58,9 +58,9 @@ static oven_fan_state_node_t fan_sm[] = {
 };
 
 // for debugging
-const char *light_state_strings[] = {"ON", "OFF"};
-const char *fan_state_strings[] = {"ON", "OFF"};
-const char *top_heater_state_strings[] = {"ON", "OFF"};
-const char *deck_heater_state_string[] = {"ON", "OFF"};
+static const char *light_state_strings[] = {"ON", "OFF"};
+static const char *fan_state_strings[] = {"ON", "OFF"};
+static const char *top_heater_state_strings[] = {"ON", "OFF"};
+static const char *deck_heater_state_string[] = {"ON", "OFF"};
 
 #endif // CONTROLLER_H

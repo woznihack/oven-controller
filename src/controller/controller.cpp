@@ -28,7 +28,7 @@ time_t controller_start_s;
 
 oven_t oven;
 oven_data_t oven_data;
-oven_data_t baking_steps[10];
+oven_data_t *baking_steps;
 uint16_t baking_steps_count;
 
 void controller_init() {
@@ -100,7 +100,9 @@ void handle_queue_messages()
     printf("[OVEN] Handling event code = %d\n", data.event);
     if (data.event == OVEN_START)
     {
+      printf("[OVEN] Handling event OVEN_START\n");
       change_oven_state(&oven, OVEN_S_PREHEATING);
+      printf("[OVEN] Handled event OVEN_START\n");
     }
     if (data.event == OVEN_STOP)
     {
@@ -113,7 +115,7 @@ void handle_queue_messages()
     }
     if (data.event == OVEN_SET_BAKING_STEPS)
     {
-      oven_data_t *baking_steps = (oven_data_t *)data.payload;
+      baking_steps = (oven_data_t *)data.payload;
       printf("[OVEN] received baking steps\n");
     }
   }

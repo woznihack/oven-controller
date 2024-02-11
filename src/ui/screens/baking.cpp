@@ -80,6 +80,10 @@ static void stop_cb(lv_event_t *e);
 static void pause_cb(lv_event_t *e);
 static void resume_cb(lv_event_t *e);
 
+void oven_data_ready_cb(void *, lv_msg_t *){
+  refresh_ui();
+}
+
 void baking_scr_init()
 {
   baking_scr = lv_obj_create(NULL);
@@ -110,6 +114,8 @@ static void scr_load_cb(lv_event_t *e)
   lv_obj_add_event_cb(stop_btn, stop_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(pause_btn, pause_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(resume_btn, resume_cb, LV_EVENT_CLICKED, NULL);
+
+  lv_msg_subscribe(MSG_SET_OVEN_MONITOR_DATA, oven_data_ready_cb, NULL);
 }
 
 static void scr_unload_cb(lv_event_t *e)
@@ -369,6 +375,7 @@ static void refresh_ui()
   // refresh temperature and duration labels
   lv_label_set_text_fmt(temp_lb, "SET: %d°C", (int)step->temperature);
 
+  printf("[UI] Oven monitor data ready? %s\n", oven_monitor.ready ? "true" : "false");
   if (!oven_monitor.ready)
   {
     lv_label_set_text_fmt(curr_temp_lb, "--- °C");
