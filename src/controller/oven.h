@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include "heater.h"
+#include "../shared_data_structures.h"
 
 typedef enum
 {
@@ -25,8 +26,10 @@ typedef struct
   oven_state_t current_state;
   heater_t top_heater;
   heater_t deck_heater;
+  oven_data_t data;
   time_t state_start_s[4];
 } oven_t;
+
 typedef struct
 {
   oven_state_t state;

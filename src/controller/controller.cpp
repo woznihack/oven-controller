@@ -24,19 +24,12 @@ void read_probes();
 oven_light_state_t current_light_state = OVEN_S_LIGHT_OFF;
 oven_fan_state_t current_fan_state = OVEN_S_FAN_OFF;
 
-uint32_t baking_duration_m = 0;
-uint32_t baking_temperature = 0;
-uint32_t baking_remaining_m = 0;
-
 time_t controller_start_s;
 
 oven_t oven;
-
-// for debugging
-const char *light_state_strings[] = {"ON", "OFF"};
-const char *fan_state_strings[] = {"ON", "OFF"};
-const char *top_heater_state_strings[] = {"ON", "OFF"};
-const char *deck_heater_state_string[] = {"ON", "OFF"};
+oven_data_t oven_data;
+oven_data_t baking_steps[10];
+uint16_t baking_steps_count;
 
 void controller_init() {
   oven = oven_create();
@@ -51,10 +44,10 @@ void controller_loop()
     handle_queue_messages();
     read_probes();
 
+    // state machine loop
     oven_loop(&oven);
     (fan_sm[current_fan_state].stateFunc)();
     (light_sm[current_light_state].stateFunc)();
-
 
     print_info();
     send_monitor_data();
@@ -83,8 +76,8 @@ void print_info()
     printf("[OVEN] [top_t = %dC, deck_t = %dC, remaining_m = %d of %d]\n",
            oven.top_heater.current_temperature,
            oven.deck_heater.current_temperature,
-           baking_remaining_m,
-           baking_duration_m);
+           oven.data.remaining_m,
+           oven.data.duration_m);
   }
 }
 
@@ -95,9 +88,7 @@ void send_monitor_data()
       is_oven_state(&oven, OVEN_S_BAKING) ||
       is_oven_state(&oven, OVEN_S_COOLDOWN))
   {
-    q_enqueue(ui_queue, UI_UPDATE_REMAINING_M, &baking_remaining_m);
-    q_enqueue(ui_queue, UI_UPDATE_TOP_HEATER_TEMP, &oven.top_heater.current_temperature);
-    q_enqueue(ui_queue, UI_UPDATE_DECK_HEATER_TEMP, &oven.deck_heater.current_temperature);
+    q_enqueue(ui_queue, UI_UPDATE_OVEN_DATA, &oven.data);
   }
 }
 
@@ -115,14 +106,15 @@ void handle_queue_messages()
     {
       change_oven_state(&oven, OVEN_S_IDLE);
     }
-    if (data.event == OVEN_SET_TEMPERATURE)
+    if (data.event == OVEN_SET_BAKING_STEPS_COUNT)
     {
-      baking_temperature = *(int *)data.payload;
+      baking_steps_count = *(uint16_t *)data.payload;
+      printf("[OVEN] received baking steps count %d\n", baking_steps_count);
     }
-    if (data.event == OVEN_SET_DURATION_M)
+    if (data.event == OVEN_SET_BAKING_STEPS)
     {
-      baking_duration_m = *(int *)data.payload;
-      baking_remaining_m = baking_duration_m;
+      oven_data_t *baking_steps = (oven_data_t *)data.payload;
+      printf("[OVEN] received baking steps\n");
     }
   }
 }

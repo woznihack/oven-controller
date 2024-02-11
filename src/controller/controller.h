@@ -57,11 +57,10 @@ static oven_fan_state_node_t fan_sm[] = {
     {OVEN_S_FAN_OFF, fan_off},
 };
 
-extern oven_light_state_t current_light_state;
-extern oven_fan_state_t current_fan_state;
-
-extern uint32_t baking_duration_m;
-extern uint32_t baking_temperature;
-extern uint32_t baking_remaining_m;
+// for debugging
+const char *light_state_strings[] = {"ON", "OFF"};
+const char *fan_state_strings[] = {"ON", "OFF"};
+const char *top_heater_state_strings[] = {"ON", "OFF"};
+const char *deck_heater_state_string[] = {"ON", "OFF"};
 
 #endif // CONTROLLER_H

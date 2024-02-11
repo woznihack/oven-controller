@@ -6,35 +6,28 @@
 #include "animations.h"
 #include "helpers.h"
 #include "messages.h"
+#include "program.h"
 #include "screens/screens.h"
 
 // prototypes
 static void handle_ui_queue(lv_timer_t *);
 static void handle_ui_msg(void *s, lv_msg_t *msg);
 
-// styles
-static lv_style_t main_style;
-static lv_style_t alpha_bg_style;
-
-struct Settings settings;
+program_t program;
+oven_monitor_t oven_monitor;
 
 void ui_init(void)
 {
-  settings.program_name = "Manual";
-  settings.temperature = counter_create(BAKING_TEMPERATURE_MIN);
-  settings.duration_m = counter_create(BAKING_DURATION_M_MIN);
-
-  printf("-- UI SETUP --");
-  printf("Setting.temperature = %d\n", settings.temperature.value);
-  printf("Setting.duration_m = %d\n", settings.duration_m.value);
+  program = program_create("Manual");
+  oven_monitor = oven_monitor_create();
 
   splash_scr_init();
   program_setup_scr_init();
+  baking_scr_init();
 
   lv_disp_load_scr(splash_scr);
-  lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 200, true);
+  lv_scr_load_anim(baking_scr, LV_SCR_LOAD_ANIM_FADE_ON, 200, 200, true);
   lv_timer_t *main_screen_update_timer = lv_timer_create(handle_ui_queue, 100, NULL);
-
   lv_msg_subscribe(MSG_SET_STATUS_STARTED, handle_ui_msg, NULL);
   lv_msg_subscribe(MSG_SET_STATUS_STOPPED, handle_ui_msg, NULL);
 }
@@ -51,15 +44,17 @@ void handle_ui_msg(void *s, lv_msg_t *msg)
     }
     lv_scr_load_anim(baking_scr, LV_SCR_LOAD_ANIM_MOVE_LEFT, 500, 300, false);
 
-    q_enqueue(oven_queue, OVEN_SET_TEMPERATURE, &settings.temperature.value);
-    q_enqueue(oven_queue, OVEN_SET_DURATION_M, &settings.duration_m.value);
+    uint16_t baking_steps_count = program.last_step_idx + 1;
+    q_enqueue(oven_queue, OVEN_SET_BAKING_STEPS_COUNT, &baking_steps_count);
+    q_enqueue(oven_queue, OVEN_SET_BAKING_STEPS, &program.steps);
     q_enqueue(oven_queue, OVEN_START, NULL);
     break;
   case MSG_SET_STATUS_STOPPED:
-    lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 300, false);
+    // lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 300, false);
     q_enqueue(oven_queue, OVEN_STOP, NULL);
     break;
   default:
+    break;
   }
 }
 
@@ -68,30 +63,8 @@ void handle_ui_queue(lv_timer_t *timer)
   q_node_t data;
   while (q_dequeue(ui_queue, &data))
   {
-    switch (data.event)
-    {
-    case UI_UPDATE_BAKING_PHASE:
-    {
-      lv_msg_send(MSG_SET_BAKING_PHASE, data.payload);
-      break;
-    }
-    case UI_UPDATE_REMAINING_M:
-    {
-      lv_msg_send(MSG_SET_MONITOR_REMAINING_M, data.payload);
-      break;
-    }
-    case UI_UPDATE_TOP_HEATER_TEMP:
-    {
-
-      lv_msg_send(MSG_SET_MONITOR_TOP_HEATER_TEMP, data.payload);
-      break;
-    }
-
-    case UI_UPDATE_DECK_HEATER_TEMP:
-    {
-      lv_msg_send(MSG_SET_MONITOR_DECK_HEATER_TEMP, data.payload);
-      break;
-    }
+    if (data.event == UI_UPDATE_OVEN_DATA) {
+      // do update oven data
     }
   }
 }

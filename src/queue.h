@@ -2,29 +2,26 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <stdbool.h>
 #include <pthread.h>
-// #include <string.h>
 
 typedef enum {
   OVEN_START,
   OVEN_PAUSE,
   OVEN_STOP,
-  OVEN_SET_TEMPERATURE,
-  OVEN_SET_DURATION_M,
+  OVEN_SET_BAKING_STEPS_COUNT,
+  OVEN_SET_BAKING_STEPS,
   OVEN_LIGHT_ON,
   OVEN_LIGHT_OFF,
   OVEN_FAN_ON,
   OVEN_FAN_OFF,
   OVEN_BROIL_ON,
   OVEN_BROIL_OFF,
+  OVEN_TOP_HEATER_ON,
+  OVEN_TOP_HEATER_OFF,
+  OVEN_DECK_HEATER_ON,
+  OVEN_DECK_HEATER_OFF,
 
-  UI_UPDATE_REMAINING_M,
-  UI_UPDATE_TOP_HEATER_TEMP,
-  UI_UPDATE_DECK_HEATER_TEMP,
-  UI_UPDATE_BAKING_PHASE
+  UI_UPDATE_OVEN_DATA
 } q_event_t;
 
 typedef struct q_node_t {

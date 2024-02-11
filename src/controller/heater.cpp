@@ -8,8 +8,8 @@ heater_t heater_create()
 {
   heater_t h;
   h.current_state = HEATER_S_OFF,
-  h.target_temperature = EMU_HEATER_ENV_TEMPERATURE;
-  h.current_temperature = EMU_HEATER_ENV_TEMPERATURE;
+  h.target_temperature = HEATER_TEMPERATURE_INIT;
+  h.current_temperature = HEATER_TEMPERATURE_INIT;
   return h;
 }
 
@@ -48,8 +48,8 @@ void heater_on(heater_t *h)
   if (h->current_temperature < h->target_temperature)
   {
     double elapsed_s = elapsed_s_since_heater_state(h, HEATER_S_ON);
-    uint32_t delta_temperature = h->target_temperature - EMU_HEATER_ENV_TEMPERATURE;
-    h->current_temperature = EMU_HEATER_ENV_TEMPERATURE + delta_temperature * EMU_HEATER_PER_SECOND_TEMP_INCREASE_PCT * elapsed_s;
+    uint32_t delta_temperature = h->target_temperature - HEATER_TEMPERATURE_INIT;
+    h->current_temperature = HEATER_TEMPERATURE_INIT + delta_temperature * EMU_HEATER_PER_SECOND_TEMP_INCREASE_PCT * elapsed_s;
     if (h->current_temperature > h->target_temperature)
     {
       h->current_temperature = h->target_temperature;
@@ -62,14 +62,14 @@ void heater_off_init(heater_t *h) {}
 void heater_off(heater_t *h)
 {
 #ifdef EMULATION
-  if (h->current_temperature > EMU_HEATER_ENV_TEMPERATURE)
+  if (h->current_temperature > HEATER_TEMPERATURE_INIT)
   {
     double elapsed_s = elapsed_s_since_heater_state(h, HEATER_S_OFF);
-    uint32_t delta_temperature = h->target_temperature - EMU_HEATER_ENV_TEMPERATURE;
+    uint32_t delta_temperature = h->target_temperature - HEATER_TEMPERATURE_INIT;
     h->current_temperature = h->current_temperature - delta_temperature * EMU_HEATER_PER_SECOND_TEMP_DECREASE_PCT * elapsed_s;
-    if (h->current_temperature < EMU_HEATER_ENV_TEMPERATURE)
+    if (h->current_temperature < HEATER_TEMPERATURE_INIT)
     {
-      h->current_temperature = EMU_HEATER_ENV_TEMPERATURE;
+      h->current_temperature = HEATER_TEMPERATURE_INIT;
     }
   }
 #endif
