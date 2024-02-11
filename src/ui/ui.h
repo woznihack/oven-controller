@@ -7,8 +7,8 @@
 #include "../queue.h"
 
 extern const lv_img_dsc_t logo;
-extern q_queue_t * oven_queue;
-extern q_queue_t * ui_queue;
+extern q_queue_t * oven_control_q;
+extern q_queue_t * oven_monitor_q;
 
 void ui_init(void);
 

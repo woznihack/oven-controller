@@ -26,8 +26,8 @@ static oven_monitor_t oven_monitor_create(){
 
 static oven_data_t program_step_create(){
   oven_data_t s;
-  s.temperature = BAKING_TEMPERATURE_MIN;
-  s.duration_m = BAKING_DURATION_M_MIN;
+  s.temperature_set = BAKING_TEMPERATURE_MIN;
+  s.duration_m_set = BAKING_DURATION_M_MIN;
   s.light_on = true;
   s.fan_on = false;
   s.deck_heater_on = true;

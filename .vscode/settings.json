@@ -21,7 +21,9 @@
     "tuple": "cpp",
     "type_traits": "cpp",
     "cmath": "cpp",
-    "cstdint": "c"
+    "cstdint": "c",
+    "__verbose_abort": "cpp",
+    "cstdio": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

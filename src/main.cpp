@@ -17,14 +17,14 @@ void *controller_thread_function(void *ptr)
     controller_loop();
 }
 
-q_queue_t *oven_queue;
-q_queue_t *ui_queue;
+q_queue_t *oven_control_q;
+q_queue_t *oven_monitor_q;
 
 
 MAIN()
 {
-    oven_queue = q_create(sizeof(oven_data_t)*2);
-    ui_queue = q_create(sizeof(oven_data_t)*2);
+    oven_control_q = q_create(sizeof(oven_data_t)*2);
+    oven_monitor_q = q_create(sizeof(oven_data_t)*2);
 
     /*Initialize LVGL*/
     lv_init();

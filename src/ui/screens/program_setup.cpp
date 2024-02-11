@@ -29,8 +29,8 @@ static lv_style_t btns_circle_style;
 static lv_obj_t *scr_content;
 static lv_obj_t *top_bar;
 static lv_obj_t *steps_bar;
-static lv_obj_t *temperature_picker;
-static lv_obj_t *duration_picker;
+static lv_obj_t *temperature_bar;
+static lv_obj_t *duration_bar;
 static lv_obj_t *toggles_bar;
 static lv_obj_t *bottom_bar;
 
@@ -163,21 +163,21 @@ void draw_screen_layout()
   lv_obj_set_size(steps_bar, LV_PCT(100), 40);
   lv_obj_add_style(steps_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  temperature_picker = lv_obj_create(scr_content);
-  lv_obj_set_flex_flow(temperature_picker, LV_FLEX_FLOW_ROW);
-  lv_obj_set_width(temperature_picker, LV_PCT(100));
-  lv_obj_set_flex_grow(temperature_picker, 1);
-  lv_obj_add_style(temperature_picker, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_pad_left(temperature_picker, 10, LV_PART_MAIN);
-  lv_obj_set_style_pad_right(temperature_picker, 10, LV_PART_MAIN);
+  temperature_bar = lv_obj_create(scr_content);
+  lv_obj_set_flex_flow(temperature_bar, LV_FLEX_FLOW_ROW);
+  lv_obj_set_width(temperature_bar, LV_PCT(100));
+  lv_obj_set_flex_grow(temperature_bar, 1);
+  lv_obj_add_style(temperature_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_pad_left(temperature_bar, 10, LV_PART_MAIN);
+  lv_obj_set_style_pad_right(temperature_bar, 10, LV_PART_MAIN);
 
-  duration_picker = lv_obj_create(scr_content);
-  lv_obj_set_flex_flow(duration_picker, LV_FLEX_FLOW_ROW);
-  lv_obj_set_width(duration_picker, LV_PCT(100));
-  lv_obj_set_flex_grow(duration_picker, 1);
-  lv_obj_add_style(duration_picker, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_pad_left(duration_picker, 10, LV_PART_MAIN);
-  lv_obj_set_style_pad_right(duration_picker, 10, LV_PART_MAIN);
+  duration_bar = lv_obj_create(scr_content);
+  lv_obj_set_flex_flow(duration_bar, LV_FLEX_FLOW_ROW);
+  lv_obj_set_width(duration_bar, LV_PCT(100));
+  lv_obj_set_flex_grow(duration_bar, 1);
+  lv_obj_add_style(duration_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_pad_left(duration_bar, 10, LV_PART_MAIN);
+  lv_obj_set_style_pad_right(duration_bar, 10, LV_PART_MAIN);
 
   toggles_bar = lv_obj_create(scr_content);
   lv_obj_set_flex_flow(toggles_bar, LV_FLEX_FLOW_ROW);
@@ -224,7 +224,7 @@ void draw_screen_items()
   lv_obj_add_style(steps_del_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   // TEMPERATURE SETUP CONTAINER
-  lv_obj_t *temp_dec_btn_container = lv_obj_create(temperature_picker);
+  lv_obj_t *temp_dec_btn_container = lv_obj_create(temperature_bar);
   lv_obj_set_height(temp_dec_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(temp_dec_btn_container, 1);
   lv_obj_add_style(temp_dec_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -236,7 +236,7 @@ void draw_screen_items()
   lv_label_set_text_fmt(temp_dec_btn_lb, "<");
   lv_obj_center(temp_dec_btn_lb);
 
-  lv_obj_t *temp_lb_container = lv_obj_create(temperature_picker);
+  lv_obj_t *temp_lb_container = lv_obj_create(temperature_bar);
   lv_obj_set_height(temp_lb_container, LV_PCT(100));
   lv_obj_set_flex_grow(temp_lb_container, 3);
   lv_obj_add_style(temp_lb_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -244,7 +244,7 @@ void draw_screen_items()
   lv_obj_set_style_text_font(temp_lb, &lv_font_montserrat_44, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_align(temp_lb, LV_ALIGN_CENTER);
 
-  lv_obj_t *temp_inc_btn_container = lv_obj_create(temperature_picker);
+  lv_obj_t *temp_inc_btn_container = lv_obj_create(temperature_bar);
   lv_obj_set_height(temp_inc_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(temp_inc_btn_container, 1);
   lv_obj_add_style(temp_inc_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -257,7 +257,7 @@ void draw_screen_items()
   lv_obj_center(temp_inc_btn_lb);
 
   // DURATION SETUP CONTAINER
-  lv_obj_t *duration_dec_btn_container = lv_obj_create(duration_picker);
+  lv_obj_t *duration_dec_btn_container = lv_obj_create(duration_bar);
   lv_obj_set_height(duration_dec_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(duration_dec_btn_container, 1);
   lv_obj_add_style(duration_dec_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -269,7 +269,7 @@ void draw_screen_items()
   lv_label_set_text_fmt(duration_dec_btn_lb, "<");
   lv_obj_center(duration_dec_btn_lb);
 
-  lv_obj_t *duration_lb_container = lv_obj_create(duration_picker);
+  lv_obj_t *duration_lb_container = lv_obj_create(duration_bar);
   lv_obj_set_height(duration_lb_container, LV_PCT(100));
   lv_obj_set_flex_grow(duration_lb_container, 3);
   lv_obj_add_style(duration_lb_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -277,7 +277,7 @@ void draw_screen_items()
   lv_obj_set_style_text_font(duration_lb, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_align(duration_lb, LV_ALIGN_CENTER);
 
-  lv_obj_t *duration_inc_btn_container = lv_obj_create(duration_picker);
+  lv_obj_t *duration_inc_btn_container = lv_obj_create(duration_bar);
   lv_obj_set_height(duration_inc_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(duration_inc_btn_container, 1);
   lv_obj_add_style(duration_inc_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -405,8 +405,8 @@ static void refresh_ui()
   lv_label_set_text_fmt(step_name_lb, "step %d/%d", curr_step_idx + 1, program.last_step_idx + 1);
 
   // refresh temperature and duration labels
-  temp_counter.value = program.steps[curr_step_idx].temperature;
-  duration_counter.value = program.steps[curr_step_idx].duration_m;
+  temp_counter.value = program.steps[curr_step_idx].temperature_set;
+  duration_counter.value = program.steps[curr_step_idx].duration_m_set;
   lv_label_set_text_fmt(temp_lb, "%d°C", (int)temp_counter.value);
   lv_label_set_text_fmt(duration_lb, "%d:%02d", (int)duration_counter.value / 60, (int)duration_counter.value % 60);
 
@@ -463,7 +463,7 @@ static void duration_dec_cb(lv_event_t *e)
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value -= (user_data->value <= BAKING_DURATION_M_MIN) ? 0 : 1;
-    program.steps[curr_step_idx].duration_m = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].duration_m_set = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
@@ -474,7 +474,7 @@ static void duration_inc_cb(lv_event_t *e)
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value += (user_data->value >= BAKING_DURATION_M_MAX) ? 0 : 1;
-    program.steps[curr_step_idx].duration_m = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].duration_m_set = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
@@ -485,7 +485,7 @@ static void temp_dec_cb(lv_event_t *e)
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value -= (user_data->value <= BAKING_TEMPERATURE_MIN) ? 0 : 1;
-    program.steps[curr_step_idx].temperature = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].temperature_set = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
@@ -496,7 +496,7 @@ static void temp_inc_cb(lv_event_t *e)
   {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value += (user_data->value >= BAKING_TEMPERATURE_MAX) ? 0 : 1;
-    program.steps[curr_step_idx].temperature = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].temperature_set = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
@@ -549,12 +549,12 @@ void steps_goto(uint16_t step_idx)
   }
 
   printf("[UI] Switching from step %d\n", curr_step_idx);
-  printf("[UI] - temperature: %d\n", program.steps[curr_step_idx].temperature);
-  printf("[UI] - duration_m: %d\n", program.steps[curr_step_idx].duration_m);
+  printf("[UI] - temperature: %d\n", program.steps[curr_step_idx].temperature_set);
+  printf("[UI] - duration_m: %d\n", program.steps[curr_step_idx].duration_m_set);
 
   printf("[UI] .. to step %d\n", step_idx);
-  printf("[UI] - temperature: %d\n", program.steps[step_idx].temperature);
-  printf("[UI] - duration_m: %d\n", program.steps[step_idx].duration_m);
+  printf("[UI] - temperature: %d\n", program.steps[step_idx].temperature_set);
+  printf("[UI] - duration_m: %d\n", program.steps[step_idx].duration_m_set);
 
   curr_step_idx = step_idx;
   refresh_ui();

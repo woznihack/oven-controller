@@ -13,5 +13,4 @@ void program_setup_scr_init();
 void baking_scr_init();
 
 extern program_t program;
-extern oven_monitor_t oven_monitor;
 #endif

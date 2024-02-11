@@ -13,8 +13,9 @@ typedef struct  {
   bool deck_heater_on;
   bool grill_on;
 
-  uint32_t temperature; // config: set temperature, monitor: current temperature
-  uint32_t duration_m; // config: set duration minutes
+  uint32_t temperature_set; // config: set temperature
+  uint32_t duration_m_set; // config: set duration minutes
+  uint32_t temperature; // monitor: current temperature
   uint32_t remaining_m; // monitor: current remaining minutes
 
   // monitor only parameters

@@ -1,7 +1,8 @@
 #ifndef HEATER_STATE_H
 #define HEATER_STATE_H
 
-#include "../settings.h"
+#include <time.h>
+#include "../main.h"
 
 typedef enum
 {
