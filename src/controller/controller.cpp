@@ -36,46 +36,60 @@ void controller_loop() {
 
     // state machine loop
     oven_loop(&oven);
-    (fan_sm[current_fan_state].stateFunc)();
-    (light_sm[current_light_state].stateFunc)();
+    // (fan_sm[current_fan_state].stateFunc)();
+    // (light_sm[current_light_state].stateFunc)();
 
     monitor_data_update();
     monitor_data_print();
 
-    sleep_ms(1000);
+    sleep_ms(200);
   }
 }
 
 void probes_read() {}
 
+static time_t last_monitor_data_print;
 void monitor_data_print() {
-  int diff_seconds = (int)difftime(time(NULL), controller_start_s);
-  if (diff_seconds % 10 == 0) {
-    debug("[OVEN] State dump\n");
-    debug("[OVEN] [oven_state = %s, fan = %s, light = %s, top_heater = %s, deck_heater = %s ]\n", oven_state_strings[oven_get_state(&oven)], fan_state_strings[current_fan_state], light_state_strings[current_light_state], top_heater_state_strings[get_heater_state(&oven.top_heater)], deck_heater_state_string[get_heater_state(&oven.deck_heater)]);
-    debug("[OVEN] [top_t = %dC, deck_t = %dC, remaining_m = %d of %d]\n", oven.top_heater.current_temperature, oven.deck_heater.current_temperature, oven.data.remaining_m, oven.data.duration_m_set);
+  if ((int)difftime(time(NULL), last_monitor_data_print) > 10) {
+    last_monitor_data_print = time(NULL);
+    oven_monitor_data_t monitor_data = oven_get_monitor_data(oven);
+    debug("[OVEN] Monior data dump\n");
+    debug("[OVEN] top heater t = %d °C\n", monitor_data.top_heater_temperature);
+    debug("[OVEN] deck heater t = %d °C\n", monitor_data.deck_heater_temperature);
   }
 }
 
-void monitor_data_update() { q_enqueue(oven_monitor_q, MONITOR_UPDATE_OVEN_DATA, &oven.data); }
+void monitor_data_update() {
+  oven_monitor_data_t monitor_data = oven_get_monitor_data(oven);
+  q_enqueue(oven_monitor_q, MONITOR_UPDATE_OVEN_DATA, &monitor_data);
+}
 
 void control_queue_handler() {
   q_node_t data;
   while (q_dequeue(oven_control_q, &data)) {
     debug("[OVEN] Handling event code = %d\n", data.event);
-    if (data.event == CONTROL_OVEN_SET_BAKING_STEPS_COUNT) {
-      oven.baking_steps_count = *(uint16_t *)data.payload;
-      debug("[OVEN] received baking steps count %d\n", oven.baking_steps_count);
+
+    // BAKING CONFIGURATION
+    if (data.event == CONTROL_OVEN_SET_BAKING_PROGRAM) {
+      debug("[OVEN] received baking program\n");
+      oven.program = (baking_program_t *)data.payload;
     }
-    if (data.event == CONTROL_OVEN_SET_BAKING_STEPS) {
-      oven.baking_steps = (oven_data_t *)data.payload;
-      debug("[OVEN] received baking steps\n");
-    }
+
+    // BAKING CONTROLS
     if (data.event == CONTROL_OVEN_START) {
       oven_change_state(&oven, OVEN_S_PREHEATING);
     }
     if (data.event == CONTROL_OVEN_STOP) {
       oven_change_state(&oven, OVEN_S_IDLE);
+    }
+    if (data.event == CONTROL_OVEN_SET_TOP_HEATER_TEMP) {
+      oven.program->steps[oven.current_program_step].top_heater_temperature = *(uint32_t *)data.payload;
+    }
+    if (data.event == CONTROL_OVEN_SET_DECK_HEATER_TEMP) {
+      oven.program->steps[oven.current_program_step].deck_heater_temperature = *(uint32_t *)data.payload;
+    }
+    if (data.event == CONTROL_OVEN_SET_DURATION_M) {
+      oven.program->steps[oven.current_program_step].duration_m = *(uint32_t *)data.payload;
     }
   }
 }

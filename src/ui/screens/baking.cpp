@@ -1,23 +1,34 @@
-#include <stdio.h>
 #include <lvgl.h>
+#include <stdio.h>
 
-#include "screens.h"
+#include "../../controller/oven.h"
+#include "../../main.h"
+#include "../counter.h"
 #include "../helpers.h"
 #include "../messages.h"
-#include "../counter.h"
+#include "screens.h"
 
 /* GLOBALS */
 lv_obj_t *baking_scr;
-static oven_monitor_t oven_monitor;
-static lv_timer_t *screen_update_timer;
+static oven_monitor_data_t monitor_data;
+bool monitor_data_valid = false;
+bool baking_started = false;
+bool baking_complete = false;
 
-/* utils */
-static void btn_set_hidden_soft(lv_obj_t *obj);
-static void btn_clear_hidden_soft(lv_obj_t *obj);
-static void btn_set_hidden(lv_obj_t *obj);
-static void btn_clear_hidden(lv_obj_t *obj);
+/* main */
+static lv_timer_t *screen_update_timer;
+static lv_obj_t *title_lb;
+static void init_styles();
+static void draw_screen_layout();
+static void draw_screen_items();
 static void scr_load_cb(lv_event_t *e);
 static void scr_unload_cb(lv_event_t *e);
+static void handle_oven_monitor_q(lv_timer_t *timer);
+static void update_monitor_data_cb(oven_monitor_data_t);
+static void refresh_ui_loading();
+static void refresh_ui_baking_completed();
+static void refresh_ui_baking_in_progress();
+static void refresh_ui();
 
 /* styles */
 static lv_style_t container_style;
@@ -33,17 +44,9 @@ static lv_obj_t *steps_bar;
 static lv_obj_t *temperature_monitor;
 static lv_obj_t *duration_picker;
 static lv_obj_t *toggles_bar;
+static lv_obj_t *loading_spinner;
 static lv_obj_t *bottom_bar;
-
-/* event callbacks */
-static void refresh_ui();
-
-/* main */
-static lv_obj_t *title_lb;
-static void init_styles();
-static void draw_screen_layout();
-static void draw_screen_items();
-static void update_monitor_data_cb(oven_data_t);
+static lv_obj_t *completed_panel;
 
 /* steps bar */
 static lv_obj_t *step_name_lb;
@@ -83,42 +86,46 @@ static void stop_cb(lv_event_t *e);
 static void pause_cb(lv_event_t *e);
 static void resume_cb(lv_event_t *e);
 
+/* completed panel */
+static lv_obj_t *home_btn;
+static void home_cb(lv_event_t *e);
 
-void handle_oven_monitor_q(lv_timer_t *timer)
-{
-  q_node_t data;
-  while (q_dequeue(oven_monitor_q, &data))
-  {
-    if (data.event == MONITOR_UPDATE_OVEN_DATA) {
-      update_monitor_data_cb(*(oven_data_t *)data.payload);
-    }
-  }
+static void dump_monitor_data(oven_monitor_data_t data) {
+  debug("[UI] --- MONITOR DATA ---\n");
+  debug("[UI] current_phase = %s\n", oven_state_strings[data.current_state]);
+  debug("[UI] top heater temperature = %d\n", data.top_heater_temperature);
+  debug("[UI] deck heater temperature = %d\n", data.deck_heater_temperature);
+  debug("[UI] remaining_m = %d\n", data.remaining_m);
 }
 
-void baking_scr_init()
-{
-  oven_monitor = oven_monitor_create();
-
+void baking_scr_init() {
   baking_scr = lv_obj_create(NULL);
   init_styles();
   draw_screen_layout();
   draw_screen_items();
+  refresh_ui_loading();
 
   lv_obj_add_event_cb(baking_scr, scr_load_cb, LV_EVENT_SCREEN_LOADED, NULL);
   lv_obj_add_event_cb(baking_scr, scr_unload_cb, LV_EVENT_SCREEN_UNLOADED, NULL);
-
-  refresh_ui();
 }
 
-static void scr_load_cb(lv_event_t *e)
-{
-  // add callbacks
+static void scr_load_cb(lv_event_t *e) {
+  // reinitialize screen
+  baking_started = false;
+  baking_complete = false;
 
+  // init monitor_data
+  monitor_data.current_state = OVEN_S_IDLE;
+  monitor_data.avg_heater_temperature = -1;
+  monitor_data.top_heater_temperature = -1;
+  monitor_data.deck_heater_temperature = -1;
+  monitor_data.remaining_m = -1;
+
+  // add callbacks
   lv_obj_add_event_cb(temp_inc_btn, temp_inc_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(temp_dec_btn, temp_dec_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(duration_inc_btn, duration_inc_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(duration_dec_btn, duration_dec_cb, LV_EVENT_CLICKED, NULL);
-
   lv_obj_add_event_cb(toggle_light_btn, toggle_light_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(toggle_fan_btn, toggle_fan_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(toggle_grill_btn, toggle_grill_cb, LV_EVENT_CLICKED, NULL);
@@ -127,18 +134,19 @@ static void scr_load_cb(lv_event_t *e)
   lv_obj_add_event_cb(stop_btn, stop_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(pause_btn, pause_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(resume_btn, resume_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(home_btn, home_cb, LV_EVENT_CLICKED, NULL);
 
+  // set timer
   screen_update_timer = lv_timer_create(handle_oven_monitor_q, 100, NULL);
+  refresh_ui_loading();
 }
 
-static void scr_unload_cb(lv_event_t *e)
-{
+static void scr_unload_cb(lv_event_t *e) {
   // remove callbacks
   lv_obj_remove_event_cb(temp_inc_btn, temp_inc_cb);
   lv_obj_remove_event_cb(temp_dec_btn, temp_dec_cb);
   lv_obj_remove_event_cb(duration_inc_btn, duration_inc_cb);
   lv_obj_remove_event_cb(duration_dec_btn, duration_dec_cb);
-
   lv_obj_remove_event_cb(toggle_light_btn, toggle_light_cb);
   lv_obj_remove_event_cb(toggle_fan_btn, toggle_fan_cb);
   lv_obj_remove_event_cb(toggle_grill_btn, toggle_grill_cb);
@@ -147,12 +155,13 @@ static void scr_unload_cb(lv_event_t *e)
   lv_obj_remove_event_cb(stop_btn, stop_cb);
   lv_obj_remove_event_cb(pause_btn, pause_cb);
   lv_obj_remove_event_cb(resume_btn, resume_cb);
+  lv_obj_remove_event_cb(home_btn, home_cb);
 
+  // delete timer
   lv_timer_del(screen_update_timer);
 }
 
-void init_styles()
-{
+void init_styles() {
   lv_style_init(&container_style);
   lv_style_set_radius(&container_style, 0);
   lv_style_set_bg_opa(&container_style, LV_OPA_0);
@@ -188,8 +197,8 @@ void init_styles()
   lv_style_set_height(&btns_circle_style, 40);
   lv_style_set_text_font(&btns_circle_style, &lv_font_montserrat_16);
 }
-void draw_screen_layout()
-{
+
+void draw_screen_layout() {
   scr_content = lv_obj_create(baking_scr);
   lv_obj_set_size(scr_content, 240, 320);
   lv_obj_center(scr_content);
@@ -227,6 +236,24 @@ void draw_screen_layout()
   lv_obj_set_style_pad_left(duration_picker, 10, LV_PART_MAIN);
   lv_obj_set_style_pad_right(duration_picker, 10, LV_PART_MAIN);
 
+  loading_spinner = lv_obj_create(scr_content);
+  lv_obj_set_flex_flow(loading_spinner, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(loading_spinner, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_width(loading_spinner, LV_PCT(100));
+  lv_obj_set_flex_grow(loading_spinner, 1);
+  lv_obj_add_style(loading_spinner, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *loading_lb = lv_label_create(loading_spinner);
+  lv_label_set_text_static(loading_lb, "LOADING...");
+  lv_obj_center(loading_lb);
+
+  completed_panel = lv_obj_create(scr_content);
+  lv_obj_set_flex_flow(completed_panel, LV_FLEX_FLOW_ROW);
+  lv_obj_set_flex_align(completed_panel, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_set_width(completed_panel, LV_PCT(100));
+  lv_obj_set_flex_grow(completed_panel, 1);
+  lv_obj_add_style(completed_panel, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+
   toggles_bar = lv_obj_create(scr_content);
   lv_obj_set_flex_flow(toggles_bar, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(toggles_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -239,8 +266,7 @@ void draw_screen_layout()
   lv_obj_set_size(bottom_bar, LV_PCT(100), 50);
   lv_obj_add_style(bottom_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
-void draw_screen_items()
-{
+void draw_screen_items() {
   // TITLE CONTAINER
   title_lb = lv_label_create(top_bar);
   lv_label_set_text_fmt(title_lb, "BAKING");
@@ -376,289 +402,260 @@ void draw_screen_items()
   resume_btn = lv_btn_create(bottom_bar);
   lv_obj_t *resume_btn_lb = lv_label_create(resume_btn);
   lv_label_set_text_fmt(resume_btn_lb, ">");
+
+  // completed panel
+  lv_obj_t *completed_panel_lb = lv_label_create(completed_panel);
+  lv_label_set_text_static(completed_panel_lb, "Baking is complete!");
+  lv_obj_center(completed_panel_lb);
+
+  // lv_obj_t *restart_btn = lv_btn_create(completed_panel);
+  // lv_obj_t *restart_btn_lb = lv_label_create(restart_btn);
+  // lv_label_set_text_static(restart_btn_lb, "Restart!");
+
+  home_btn = lv_btn_create(completed_panel);
+  lv_obj_t *home_btn_lb = lv_label_create(home_btn);
+  lv_label_set_text_static(home_btn_lb, "Back to main screen");
 }
 
+static void refresh_ui_baking_completed() {
+  // hides everything but the spinner
+  lv_obj_add_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(duration_picker, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(loading_spinner, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
 
-static void update_monitor_data_cb(oven_data_t data)
-{
-  oven_data_t prev_data = oven_monitor.data;
-  oven_monitor.data = data;
-  oven_monitor.ready = true;
-
-  if (prev_data.current_phase != data.current_phase) {
-    if (data.current_phase == "preheating")
-    {
-      btn_clear_hidden(temp_lb);
-      btn_set_hidden(duration_picker);
-      btn_clear_hidden(toggles_bar);
-
-      lv_label_set_text_fmt(step_name_lb, "preheating");
-    }
-    else if (data.current_phase == "baking")
-    {
-      btn_clear_hidden(temp_lb);
-      btn_clear_hidden(duration_picker);
-      btn_clear_hidden(toggles_bar);
-
-      lv_label_set_text_fmt(step_name_lb, "baking");
-    }
-    else if (oven_monitor.data.current_phase == "cooldown")
-    {
-      lv_label_set_text_fmt(step_name_lb, "cooldown");
-
-      btn_set_hidden(temp_dec_btn);
-      btn_set_hidden(temp_inc_btn);
-      btn_set_hidden(temp_lb);
-      btn_set_hidden(duration_picker);
-      btn_set_hidden(toggles_bar);
-    }
-
-    oven_monitor.ready = false;
-  }
-
-
-  if (oven_monitor.ready) {
-    if (data.current_phase == "baking" && data.total_steps > 1)
-      lv_label_set_text_fmt(step_name_lb, "baking %d/%d", data.current_step, data.total_steps);
-
-    lv_label_set_text_fmt(temp_lb, "SET: %d°C", oven_monitor.data.temperature_set);
-    lv_label_set_text_fmt(remaining_m_lb, "%d:%02d", oven_monitor.data.remaining_m / 60, oven_monitor.data.remaining_m % 60);
-    lv_label_set_text_fmt(curr_temp_lb, "%d °C", oven_monitor.data.temperature);
-
-    // refresh temperature button state
-    if (data.temperature <= BAKING_TEMPERATURE_MIN)
-      lv_obj_add_state(temp_dec_btn, LV_STATE_DISABLED);
-    else
-      lv_obj_clear_state(temp_dec_btn, LV_STATE_DISABLED);
-
-    if (data.temperature >= BAKING_TEMPERATURE_MAX)
-      lv_obj_add_state(temp_inc_btn, LV_STATE_DISABLED);
-    else
-      lv_obj_clear_state(temp_inc_btn, LV_STATE_DISABLED);
-
-    // refresh duration button state
-    if (data.remaining_m <= BAKING_DURATION_M_MIN)
-      lv_obj_add_state(duration_dec_btn, LV_STATE_DISABLED);
-    else
-      lv_obj_clear_state(duration_dec_btn, LV_STATE_DISABLED);
-
-    if (data.remaining_m >= BAKING_DURATION_M_MAX)
-      lv_obj_add_state(duration_inc_btn, LV_STATE_DISABLED);
-    else
-      lv_obj_clear_state(duration_inc_btn, LV_STATE_DISABLED);
-
-    // refresh other setup buttons
-    if (data.light_on && !lv_obj_has_state(toggle_light_btn, LV_STATE_CHECKED))
-      lv_obj_add_state(toggle_light_btn, LV_STATE_CHECKED);
-    if (!data.light_on)
-      lv_obj_clear_state(toggle_light_btn, LV_STATE_CHECKED);
-
-    if (data.fan_on && !lv_obj_has_state(toggle_fan_btn, LV_STATE_CHECKED))
-      lv_obj_add_state(toggle_fan_btn, LV_STATE_CHECKED);
-    if (!data.fan_on)
-      lv_obj_clear_state(toggle_fan_btn, LV_STATE_CHECKED);
-
-    if (data.grill_on && !lv_obj_has_state(toggle_grill_btn, LV_STATE_CHECKED))
-      lv_obj_add_state(toggle_grill_btn, LV_STATE_CHECKED);
-    if (!data.grill_on)
-      lv_obj_clear_state(toggle_grill_btn, LV_STATE_CHECKED);
-
-    if (data.top_heater_on && !lv_obj_has_state(toggle_top_heater_btn, LV_STATE_CHECKED))
-      lv_obj_add_state(toggle_top_heater_btn, LV_STATE_CHECKED);
-    if (!data.top_heater_on)
-      lv_obj_clear_state(toggle_top_heater_btn, LV_STATE_CHECKED);
-
-    if (data.deck_heater_on && !lv_obj_has_state(toggle_deck_heater_btn, LV_STATE_CHECKED))
-      lv_obj_add_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
-    if (!data.deck_heater_on)
-      lv_obj_clear_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
-  }
+  lv_obj_clear_flag(completed_panel, LV_OBJ_FLAG_HIDDEN);
 }
 
-static void refresh_ui()
-{
-  if (!oven_monitor.ready)
-  {
-    lv_label_set_text_fmt(curr_temp_lb, "--- °C");
-    lv_label_set_text_fmt(remaining_m_lb, "-:--");
+static void refresh_ui_baking_in_progress() {
+  lv_label_set_text_fmt(step_name_lb, "%s", oven_state_strings[monitor_data.current_state]);
+  if (monitor_data.current_state == OVEN_S_BAKING && monitor_data.program_steps_total > 1) {
+    lv_label_set_text_fmt(step_name_lb, "baking %d/%d", monitor_data.program_step_current, monitor_data.program_steps_total);
   }
 
-  if (program.paused)
-  {
-    btn_set_hidden(pause_btn);
-    btn_clear_hidden(resume_btn);
-  }
+  lv_label_set_text_fmt(temp_lb, "SET: %d°C", monitor_data.config_temperature);
+  lv_label_set_text_fmt(remaining_m_lb, "%d:%02d", monitor_data.remaining_m / 60, monitor_data.remaining_m % 60);
+  lv_label_set_text_fmt(curr_temp_lb, "%d °C", monitor_data.avg_heater_temperature);
+
+  // refresh temperature button state
+  if (monitor_data.avg_heater_temperature <= BAKING_TEMPERATURE_MIN)
+    lv_obj_add_state(temp_dec_btn, LV_STATE_DISABLED);
   else
-  {
-    btn_clear_hidden(pause_btn);
-    btn_set_hidden(resume_btn);
+    lv_obj_clear_state(temp_dec_btn, LV_STATE_DISABLED);
+
+  if (monitor_data.avg_heater_temperature >= BAKING_TEMPERATURE_MAX)
+    lv_obj_add_state(temp_inc_btn, LV_STATE_DISABLED);
+  else
+    lv_obj_clear_state(temp_inc_btn, LV_STATE_DISABLED);
+
+  // refresh duration button state
+  if (monitor_data.remaining_m <= BAKING_DURATION_M_MIN)
+    lv_obj_add_state(duration_dec_btn, LV_STATE_DISABLED);
+  else
+    lv_obj_clear_state(duration_dec_btn, LV_STATE_DISABLED);
+
+  if (monitor_data.remaining_m >= BAKING_DURATION_M_MAX)
+    lv_obj_add_state(duration_inc_btn, LV_STATE_DISABLED);
+  else
+    lv_obj_clear_state(duration_inc_btn, LV_STATE_DISABLED);
+
+  // refresh other setup buttons
+  if (monitor_data.light_on && !lv_obj_has_state(toggle_light_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_light_btn, LV_STATE_CHECKED);
+  if (!monitor_data.light_on) lv_obj_clear_state(toggle_light_btn, LV_STATE_CHECKED);
+
+  if (monitor_data.fan_on && !lv_obj_has_state(toggle_fan_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_fan_btn, LV_STATE_CHECKED);
+  if (!monitor_data.fan_on) lv_obj_clear_state(toggle_fan_btn, LV_STATE_CHECKED);
+
+  if (monitor_data.grill_on && !lv_obj_has_state(toggle_grill_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_grill_btn, LV_STATE_CHECKED);
+  if (!monitor_data.grill_on) lv_obj_clear_state(toggle_grill_btn, LV_STATE_CHECKED);
+
+  if (monitor_data.top_heater_on && !lv_obj_has_state(toggle_top_heater_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_top_heater_btn, LV_STATE_CHECKED);
+  if (!monitor_data.top_heater_on) lv_obj_clear_state(toggle_top_heater_btn, LV_STATE_CHECKED);
+
+  if (monitor_data.deck_heater_on && !lv_obj_has_state(toggle_deck_heater_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
+  if (!monitor_data.deck_heater_on) lv_obj_clear_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
+
+  if (!monitor_data_valid) {
+    monitor_data_valid = true;
+    if (monitor_data.current_state == OVEN_S_PREHEATING) {
+      lv_obj_clear_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temp_lb, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
+    } else if (monitor_data.current_state == OVEN_S_BAKING) {
+      lv_obj_clear_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(duration_picker, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temp_lb, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
+    } else if (monitor_data.current_state == OVEN_S_COOLDOWN) {
+      lv_obj_clear_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(temp_dec_btn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(temp_inc_btn, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(temp_lb, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_add_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
+    }
+    lv_obj_add_flag(loading_spinner, LV_OBJ_FLAG_HIDDEN);
   }
 }
 
-static void duration_dec_cb(lv_event_t *e)
-{
-  oven_monitor.data.duration_m_set -= 1;
-  if (oven_monitor.data.duration_m_set < BAKING_DURATION_M_MIN)
-    oven_monitor.data.duration_m_set = BAKING_DURATION_M_MIN;
+static void refresh_ui_loading() {
+  // hides everything but the spinner
+  lv_obj_add_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(duration_picker, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(completed_panel, LV_OBJ_FLAG_HIDDEN);
 
-  refresh_ui();
+  // shows the spinner
+  lv_obj_clear_flag(loading_spinner, LV_OBJ_FLAG_HIDDEN);
 }
 
-static void duration_inc_cb(lv_event_t *e)
-{
-  oven_monitor.data.duration_m_set += 1;
-  if (oven_monitor.data.duration_m_set > BAKING_DURATION_M_MIN)
-    oven_monitor.data.duration_m_set = BAKING_DURATION_M_MAX;
-
-  refresh_ui();
-}
-
-static void temp_dec_cb(lv_event_t *e)
-{
-  oven_monitor.data.temperature_set -= 5;
-  if (oven_monitor.data.temperature_set < BAKING_TEMPERATURE_MIN)
-    oven_monitor.data.temperature_set = BAKING_TEMPERATURE_MIN;
-
-  refresh_ui();
-}
-
-static void temp_inc_cb(lv_event_t *e)
-{
-  oven_monitor.data.temperature_set += 5;
-  if (oven_monitor.data.temperature_set > BAKING_TEMPERATURE_MAX)
-    oven_monitor.data.temperature_set = BAKING_TEMPERATURE_MAX;
-
-
-  refresh_ui();
-}
-
-static void pause_cb(lv_event_t *e)
-{
-  LV_UNUSED(e);
-
-  if (!program.paused)
-  {
-    printf("[UI] Pausing program\n");
-    program.paused = true;
-    lv_msg_send(MSG_SET_STATUS_PAUSED, NULL);
-    refresh_ui();
+void handle_oven_monitor_q(lv_timer_t *timer) {
+  q_node_t data;
+  while (q_dequeue(oven_monitor_q, &data)) {
+    if (data.event == MONITOR_UPDATE_OVEN_DATA) {
+      update_monitor_data_cb(*(oven_monitor_data_t *)data.payload);
+    }
   }
 }
 
-static void resume_cb(lv_event_t *e)
-{
-  LV_UNUSED(e);
+static void update_monitor_data_cb(oven_monitor_data_t data) {
+  oven_monitor_data_t prev_data = monitor_data;
+  monitor_data = data;
+  // dump_monitor_data(monitor_data);
 
-  if (program.paused)
-  {
-    printf("[UI] Resuming program\n");
-    program.paused = false;
-    lv_msg_send(MSG_SET_STATUS_RESUMED, NULL);
-    refresh_ui();
+  // on a phase change, we show the loading spinner and invalidate data
+  if (prev_data.current_state != data.current_state) {
+    monitor_data_valid = false;
+    if (prev_data.current_state == OVEN_S_COOLDOWN && data.current_state == OVEN_S_IDLE) {
+      baking_complete = true;
+    } else {
+      baking_started = true;
+      refresh_ui_loading();
+    }
+  } else if (baking_complete) {
+    refresh_ui_baking_completed();
+  } else if (baking_started) {
+    refresh_ui_baking_in_progress();
   }
 }
 
-static void stop_cb(lv_event_t *e)
-{
+static void refresh_ui() {
+  debug("[UI] refreshing baking screen\n");
+  debug("[UI] monitor data ready? %s\n", monitor_data_valid ? "true" : "false");
+
+  // if (program.paused) {
+  //   lv_obj_add_flag(pause_btn, LV_OBJ_FLAG_HIDDEN);
+  //   lv_obj_clear_flag(resume_btn, LV_OBJ_FLAG_HIDDEN);
+  // } else {
+  //   lv_obj_clear_flag(pause_btn, LV_OBJ_FLAG_HIDDEN);
+  //   lv_obj_add_flag(resume_btn, LV_OBJ_FLAG_HIDDEN);
+  // }
+}
+
+static void duration_dec_cb(lv_event_t *e) {
+  uint32_t new_duration = MAX(monitor_data.config_duration_m - 1, BAKING_DURATION_M_MIN);
+  monitor_data.config_duration_m = new_duration;
+  q_enqueue(oven_control_q, CONTROL_OVEN_SET_DURATION_M, &new_duration);
+}
+
+static void duration_inc_cb(lv_event_t *e) {
+  uint32_t new_duration = MIN(monitor_data.config_duration_m + 1, BAKING_DURATION_M_MAX);
+  monitor_data.config_duration_m = new_duration;
+  q_enqueue(oven_control_q, CONTROL_OVEN_SET_DURATION_M, &new_duration);
+}
+
+static void temp_dec_cb(lv_event_t *e) {
+  uint32_t new_temperature = MAX(monitor_data.config_temperature - 5, BAKING_TEMPERATURE_MIN);
+  monitor_data.config_temperature = new_temperature;
+  q_enqueue(oven_control_q, CONTROL_OVEN_SET_TOP_HEATER_TEMP, &new_temperature);
+  q_enqueue(oven_control_q, CONTROL_OVEN_SET_DECK_HEATER_TEMP, &new_temperature);
+}
+
+static void temp_inc_cb(lv_event_t *e) {
+  uint32_t new_temperature = MIN(monitor_data.config_temperature + 5, BAKING_TEMPERATURE_MAX);
+  monitor_data.config_temperature = new_temperature;
+  q_enqueue(oven_control_q, CONTROL_OVEN_SET_TOP_HEATER_TEMP, &new_temperature);
+  q_enqueue(oven_control_q, CONTROL_OVEN_SET_DECK_HEATER_TEMP, &new_temperature);
+}
+
+static void pause_cb(lv_event_t *e) { LV_UNUSED(e); }
+
+static void resume_cb(lv_event_t *e) { LV_UNUSED(e); }
+
+static void stop_cb(lv_event_t *e) {
   LV_UNUSED(e);
   lv_msg_send(MSG_SET_STATUS_STOPPED, NULL);
 }
 
-// makes the button disappear, also removes clickable flag otherwise clicks trigger events
-static void btn_set_hidden_soft(lv_obj_t *obj)
-{
-  lv_obj_set_style_opa(obj, LV_OPA_0, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
-}
-static void btn_clear_hidden_soft(lv_obj_t *obj)
-{
-  lv_obj_set_style_opa(obj, LV_OPA_100, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+static void home_cb(lv_event_t *e) {
+  LV_UNUSED(e);
+
+  if (program_setup_scr == NULL) {
+    program_setup_scr_init();
+  }
+  lv_scr_load_anim(program_setup_scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 200, 200, false);
 }
 
-static void btn_set_hidden(lv_obj_t *obj)
-{
-  lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
-}
-static void btn_clear_hidden(lv_obj_t *obj)
-{
-  lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
-}
-
-void toggle_light_cb(lv_event_t *e)
-{
+void toggle_light_cb(lv_event_t *e) {
   LV_UNUSED(e);
   printf("[UI] LIGHT CB\n");
 
-  if (program.steps[program.curr_step_idx].light_on)
-  {
+  if (monitor_data.light_on) {
     printf("[UI] LIGHT OFF\n");
-    program.steps[program.curr_step_idx].light_on = false;
-  }
-  else
-  {
+    monitor_data.light_on = false;
+  } else {
     printf("[UI] LIGHT ON\n");
-    program.steps[program.curr_step_idx].light_on = true;
+    monitor_data.light_on = true;
   }
   refresh_ui();
 }
 
-void toggle_fan_cb(lv_event_t *e)
-{
+void toggle_fan_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[program.curr_step_idx].fan_on)
-  {
-    program.steps[program.curr_step_idx].fan_on = false;
-  }
-  else
-  {
-    program.steps[program.curr_step_idx].fan_on = true;
+  if (monitor_data.fan_on) {
+    monitor_data.fan_on = false;
+  } else {
+    monitor_data.fan_on = true;
   }
   refresh_ui();
 }
 
-void toggle_grill_cb(lv_event_t *e)
-{
+void toggle_grill_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[program.curr_step_idx].grill_on)
-  {
-    program.steps[program.curr_step_idx].grill_on = false;
-  }
-  else
-  {
-    if (program.steps[program.curr_step_idx].top_heater_on)
-      program.steps[program.curr_step_idx].top_heater_on = false;
-    program.steps[program.curr_step_idx].grill_on = true;
+  if (monitor_data.grill_on) {
+    monitor_data.grill_on = false;
+  } else {
+    if (monitor_data.top_heater_on) monitor_data.top_heater_on = false;
+    monitor_data.grill_on = true;
   }
   refresh_ui();
 }
 
-void toggle_top_heater_cb(lv_event_t *e)
-{
+void toggle_top_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[program.curr_step_idx].top_heater_on)
-  {
-    program.steps[program.curr_step_idx].top_heater_on = false;
-  }
-  else
-  {
-    if (program.steps[program.curr_step_idx].grill_on)
-      program.steps[program.curr_step_idx].grill_on = false;
-    program.steps[program.curr_step_idx].top_heater_on = true;
+  if (monitor_data.top_heater_on) {
+    monitor_data.top_heater_on = false;
+  } else {
+    if (monitor_data.grill_on) monitor_data.grill_on = false;
+    monitor_data.top_heater_on = true;
   }
   refresh_ui();
 }
 
-void toggle_deck_heater_cb(lv_event_t *e)
-{
+void toggle_deck_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[program.curr_step_idx].deck_heater_on)
-  {
-    program.steps[program.curr_step_idx].deck_heater_on = false;
-  }
-  else
-  {
-    program.steps[program.curr_step_idx].deck_heater_on = true;
+  if (monitor_data.deck_heater_on) {
+    monitor_data.deck_heater_on = false;
+  } else {
+    monitor_data.deck_heater_on = true;
   }
   refresh_ui();
 }

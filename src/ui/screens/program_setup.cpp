@@ -1,13 +1,16 @@
-#include <stdio.h>
 #include <lvgl.h>
+#include <stdio.h>
 
-#include "screens.h"
+#include "../../baking_program.h"
+#include "../../main.h"
+#include "../counter.h"
 #include "../helpers.h"
 #include "../messages.h"
-#include "../counter.h"
+#include "screens.h"
 
 /* GLOBALS */
 lv_obj_t *program_setup_scr;
+extern baking_program_t program;
 static uint16_t curr_step_idx = 0;
 
 /* utils */
@@ -86,10 +89,11 @@ static void toggle_deck_heater_cb(lv_event_t *e);
 
 /* bottom bar */
 static lv_obj_t *start_btn;
+static lv_obj_t *back_btn;
 static void start_cb(lv_event_t *e);
+static void back_cb(lv_event_t *e);
 
-void program_setup_scr_init()
-{
+void program_setup_scr_init() {
   program_setup_scr = lv_obj_create(NULL);
   init_styles();
   draw_screen_layout();
@@ -99,8 +103,7 @@ void program_setup_scr_init()
   refresh_ui();
 }
 
-void init_styles()
-{
+void init_styles() {
   lv_style_init(&container_style);
   lv_style_set_radius(&container_style, 0);
   lv_style_set_bg_opa(&container_style, LV_OPA_0);
@@ -137,8 +140,7 @@ void init_styles()
   lv_style_set_text_font(&btns_circle_style, &lv_font_montserrat_44);
 }
 
-void draw_screen_layout()
-{
+void draw_screen_layout() {
   scr_content = lv_obj_create(program_setup_scr);
   lv_obj_set_size(scr_content, 240, 320);
   lv_obj_center(scr_content);
@@ -192,8 +194,7 @@ void draw_screen_layout()
   lv_obj_add_style(bottom_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
-void draw_screen_items()
-{
+void draw_screen_items() {
   // TITLE CONTAINER
   title_lb = lv_label_create(top_bar);
   lv_label_set_text_fmt(title_lb, "BAKE CONFIGURATION");
@@ -331,13 +332,17 @@ void draw_screen_items()
   lv_obj_center(deck_heater_btn_lb);
 
   // CONTROLS
+  back_btn = lv_btn_create(bottom_bar);
+  lv_obj_t *back_btn_lb = lv_label_create(back_btn);
+  lv_label_set_text_fmt(back_btn_lb, "Back");
+  lv_obj_add_state(back_btn, LV_STATE_DISABLED);
+
   start_btn = lv_btn_create(bottom_bar);
   lv_obj_t *start_btn_lb = lv_label_create(start_btn);
   lv_label_set_text_fmt(start_btn_lb, "Start");
 }
 
-static void scr_load_cb(lv_event_t *e)
-{
+static void scr_load_cb(lv_event_t *e) {
   // add callbacks
   counter_add_event_cb(temp_dec_btn, temp_dec_cb, &temp_counter);
   counter_add_event_cb(temp_inc_btn, temp_inc_cb, &temp_counter);
@@ -354,10 +359,11 @@ static void scr_load_cb(lv_event_t *e)
   lv_obj_add_event_cb(toggle_top_heater_btn, toggle_top_heater_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(toggle_deck_heater_btn, toggle_deck_heater_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(start_btn, start_cb, LV_EVENT_CLICKED, NULL);
+  lv_obj_add_event_cb(back_btn, back_cb, LV_EVENT_CLICKED, NULL);
+
 }
 
-static void scr_unload_cb(lv_event_t *e)
-{
+static void scr_unload_cb(lv_event_t *e) {
   // remove callbacks
   counter_remove_event_cb(temp_dec_btn, temp_dec_cb, &temp_counter);
   counter_remove_event_cb(temp_inc_btn, temp_inc_cb, &temp_counter);
@@ -374,11 +380,11 @@ static void scr_unload_cb(lv_event_t *e)
   lv_obj_remove_event_cb(toggle_top_heater_btn, toggle_top_heater_cb);
   lv_obj_remove_event_cb(toggle_deck_heater_btn, toggle_deck_heater_cb);
   lv_obj_remove_event_cb(start_btn, start_cb);
+  lv_obj_remove_event_cb(back_btn, back_cb);
 }
 
-static void refresh_ui()
-{
-  oven_data_t *step = &program.steps[curr_step_idx];
+static void refresh_ui() {
+  baking_program_step_t *step = &program.steps[curr_step_idx];
 
   // refresh steps bar
   if (curr_step_idx > 0)
@@ -386,8 +392,7 @@ static void refresh_ui()
   else
     lv_obj_add_state(steps_prev_btn, LV_STATE_DISABLED);
 
-  if (curr_step_idx == program.last_step_idx)
-  {
+  if (curr_step_idx == program.steps_count - 1) {
     btn_set_hidden(steps_next_btn);
     btn_clear_hidden(steps_add_btn);
 
@@ -395,18 +400,16 @@ static void refresh_ui()
       lv_obj_add_state(steps_del_btn, LV_STATE_DISABLED);
     else
       lv_obj_clear_state(steps_del_btn, LV_STATE_DISABLED);
-  }
-  else
-  {
+  } else {
     btn_clear_hidden(steps_next_btn);
     btn_set_hidden(steps_add_btn);
     lv_obj_add_state(steps_del_btn, LV_STATE_DISABLED);
   }
-  lv_label_set_text_fmt(step_name_lb, "step %d/%d", curr_step_idx + 1, program.last_step_idx + 1);
+  lv_label_set_text_fmt(step_name_lb, "step %d/%d", curr_step_idx + 1, program.steps_count);
 
   // refresh temperature and duration labels
-  temp_counter.value = program.steps[curr_step_idx].temperature_set;
-  duration_counter.value = program.steps[curr_step_idx].duration_m_set;
+  temp_counter.value = program.steps[curr_step_idx].top_heater_temperature;
+  duration_counter.value = program.steps[curr_step_idx].duration_m;
   lv_label_set_text_fmt(temp_lb, "%d°C", (int)temp_counter.value);
   lv_label_set_text_fmt(duration_lb, "%d:%02d", (int)duration_counter.value / 60, (int)duration_counter.value % 60);
 
@@ -431,235 +434,194 @@ static void refresh_ui()
     lv_obj_clear_state(duration_inc_btn, LV_STATE_DISABLED);
 
   // refresh other setup buttons
-  if (step->light_on && !lv_obj_has_state(toggle_light_btn, LV_STATE_CHECKED))
-    lv_obj_add_state(toggle_light_btn, LV_STATE_CHECKED);
-  if (!step->light_on)
-    lv_obj_clear_state(toggle_light_btn, LV_STATE_CHECKED);
+  if (step->light_on && !lv_obj_has_state(toggle_light_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_light_btn, LV_STATE_CHECKED);
+  if (!step->light_on) lv_obj_clear_state(toggle_light_btn, LV_STATE_CHECKED);
 
-  if (step->fan_on && !lv_obj_has_state(toggle_fan_btn, LV_STATE_CHECKED))
-    lv_obj_add_state(toggle_fan_btn, LV_STATE_CHECKED);
-  if (!step->fan_on)
-    lv_obj_clear_state(toggle_fan_btn, LV_STATE_CHECKED);
+  if (step->fan_on && !lv_obj_has_state(toggle_fan_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_fan_btn, LV_STATE_CHECKED);
+  if (!step->fan_on) lv_obj_clear_state(toggle_fan_btn, LV_STATE_CHECKED);
 
-  if (step->grill_on && !lv_obj_has_state(toggle_grill_btn, LV_STATE_CHECKED))
-    lv_obj_add_state(toggle_grill_btn, LV_STATE_CHECKED);
-  if (!step->grill_on)
-    lv_obj_clear_state(toggle_grill_btn, LV_STATE_CHECKED);
+  if (step->grill_on && !lv_obj_has_state(toggle_grill_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_grill_btn, LV_STATE_CHECKED);
+  if (!step->grill_on) lv_obj_clear_state(toggle_grill_btn, LV_STATE_CHECKED);
 
-  if (step->top_heater_on && !lv_obj_has_state(toggle_top_heater_btn, LV_STATE_CHECKED))
-    lv_obj_add_state(toggle_top_heater_btn, LV_STATE_CHECKED);
-  if (!step->top_heater_on)
-    lv_obj_clear_state(toggle_top_heater_btn, LV_STATE_CHECKED);
+  if (step->top_heater_on && !lv_obj_has_state(toggle_top_heater_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_top_heater_btn, LV_STATE_CHECKED);
+  if (!step->top_heater_on) lv_obj_clear_state(toggle_top_heater_btn, LV_STATE_CHECKED);
 
-  if (step->deck_heater_on && !lv_obj_has_state(toggle_deck_heater_btn, LV_STATE_CHECKED))
-    lv_obj_add_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
-  if (!step->deck_heater_on)
-    lv_obj_clear_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
+  if (step->deck_heater_on && !lv_obj_has_state(toggle_deck_heater_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
+  if (!step->deck_heater_on) lv_obj_clear_state(toggle_deck_heater_btn, LV_STATE_CHECKED);
 }
 
-static void duration_dec_cb(lv_event_t *e)
-{
-  if (counter_should_change(e))
-  {
+static void duration_dec_cb(lv_event_t *e) {
+  if (counter_should_change(e)) {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value -= (user_data->value <= BAKING_DURATION_M_MIN) ? 0 : 1;
-    program.steps[curr_step_idx].duration_m_set = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].duration_m = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
 
-static void duration_inc_cb(lv_event_t *e)
-{
-  if (counter_should_change(e))
-  {
+static void duration_inc_cb(lv_event_t *e) {
+  if (counter_should_change(e)) {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value += (user_data->value >= BAKING_DURATION_M_MAX) ? 0 : 1;
-    program.steps[curr_step_idx].duration_m_set = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].duration_m = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
 
-static void temp_dec_cb(lv_event_t *e)
-{
-  if (counter_should_change(e))
-  {
+static void temp_dec_cb(lv_event_t *e) {
+  if (counter_should_change(e)) {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value -= (user_data->value <= BAKING_TEMPERATURE_MIN) ? 0 : 1;
-    program.steps[curr_step_idx].temperature_set = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].top_heater_temperature = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].deck_heater_temperature = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
 
-static void temp_inc_cb(lv_event_t *e)
-{
-  if (counter_should_change(e))
-  {
+static void temp_inc_cb(lv_event_t *e) {
+  if (counter_should_change(e)) {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value += (user_data->value >= BAKING_TEMPERATURE_MAX) ? 0 : 1;
-    program.steps[curr_step_idx].temperature_set = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].top_heater_temperature = (uint32_t)user_data->value;
+    program.steps[curr_step_idx].deck_heater_temperature = (uint32_t)user_data->value;
     refresh_ui();
   }
 }
 
-void steps_add_cb(lv_event_t *e)
-{
+void steps_add_cb(lv_event_t *e) {
   LV_UNUSED(e);
 
-  if (program.last_step_idx + 1 >= BAKING_MAX_STEPS)
-  {
+  if (program.steps_count >= BAKING_MAX_STEPS) {
     return;
   }
 
-  program_add_step(&program);
-  steps_goto(program.last_step_idx);
+  baking_program_add_step(&program, baking_program_step_create());
+  steps_goto(program.steps_count - 1);
 }
 
-void steps_del_cb(lv_event_t *e)
-{
+void steps_del_cb(lv_event_t *e) {
   LV_UNUSED(e);
 
-  if (program.last_step_idx == 0)
-  {
+  if (program.steps_count == 0) {
     return;
   }
 
-  program_delete_last_step(&program);
-  steps_goto(program.last_step_idx);
+  baking_program_delete_last_step(&program);
+  steps_goto(program.steps_count - 1);
 }
 
-void steps_prev_cb(lv_event_t *e)
-{
+void steps_prev_cb(lv_event_t *e) {
   LV_UNUSED(e);
   printf("Prev step clicked");
   steps_goto(curr_step_idx - 1);
 }
 
-void steps_next_cb(lv_event_t *e)
-{
+void steps_next_cb(lv_event_t *e) {
   LV_UNUSED(e);
   printf("Next step clicked");
   steps_goto(curr_step_idx + 1);
 }
 
-void steps_goto(uint16_t step_idx)
-{
-  if (step_idx < 0 || step_idx > program.last_step_idx)
-  {
+void steps_goto(uint16_t step_idx) {
+  if (step_idx < 0 || step_idx >= program.steps_count) {
     return;
   }
 
   printf("[UI] Switching from step %d\n", curr_step_idx);
-  printf("[UI] - temperature: %d\n", program.steps[curr_step_idx].temperature_set);
-  printf("[UI] - duration_m: %d\n", program.steps[curr_step_idx].duration_m_set);
+  printf("[UI] - temperature: %d\n", program.steps[curr_step_idx].top_heater_temperature);
+  printf("[UI] - duration_m: %d\n", program.steps[curr_step_idx].duration_m);
 
   printf("[UI] .. to step %d\n", step_idx);
-  printf("[UI] - temperature: %d\n", program.steps[step_idx].temperature_set);
-  printf("[UI] - duration_m: %d\n", program.steps[step_idx].duration_m_set);
+  printf("[UI] - temperature: %d\n", program.steps[step_idx].top_heater_temperature);
+  printf("[UI] - duration_m: %d\n", program.steps[step_idx].duration_m);
 
   curr_step_idx = step_idx;
   refresh_ui();
 }
 
-static void start_cb(lv_event_t *e)
-{
+static void start_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  lv_msg_send(MSG_SET_STATUS_STARTED, NULL);
+
+  q_enqueue(oven_control_q, CONTROL_OVEN_SET_BAKING_PROGRAM, &program);
+  q_enqueue(oven_control_q, CONTROL_OVEN_START, NULL);
+
+  if (baking_scr == NULL) {
+    baking_scr_init();
+  }
+  lv_scr_load_anim(baking_scr, LV_SCR_LOAD_ANIM_MOVE_LEFT, 200, 200, false);
+}
+
+static void back_cb(lv_event_t *e) {
+  LV_UNUSED(e);
+  printf("Is splash screen null? %s\n", splash_scr == NULL ? "true" : "false");
+  lv_scr_load(splash_scr);
+  // lv_scr_load_anim(splash_scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 300, false);
 }
 
 // makes the button disappear, also removes clickable flag otherwise clicks trigger events
-static void btn_set_hidden_soft(lv_obj_t *obj)
-{
+static void btn_set_hidden_soft(lv_obj_t *obj) {
   lv_obj_set_style_opa(obj, LV_OPA_0, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
 }
-static void btn_clear_hidden_soft(lv_obj_t *obj)
-{
+static void btn_clear_hidden_soft(lv_obj_t *obj) {
   lv_obj_set_style_opa(obj, LV_OPA_100, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
 }
 
-static void btn_set_hidden(lv_obj_t *obj)
-{
-  lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
-}
-static void btn_clear_hidden(lv_obj_t *obj)
-{
-  lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
-}
+static void btn_set_hidden(lv_obj_t *obj) { lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN); }
+static void btn_clear_hidden(lv_obj_t *obj) { lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN); }
 
-void toggle_light_cb(lv_event_t *e)
-{
+void toggle_light_cb(lv_event_t *e) {
   LV_UNUSED(e);
   printf("[UI] LIGHT CB\n");
 
-  if (program.steps[curr_step_idx].light_on)
-  {
+  if (program.steps[curr_step_idx].light_on) {
     printf("[UI] LIGHT OFF\n");
     program.steps[curr_step_idx].light_on = false;
-  }
-  else
-  {
+  } else {
     printf("[UI] LIGHT ON\n");
     program.steps[curr_step_idx].light_on = true;
   }
   refresh_ui();
 }
 
-void toggle_fan_cb(lv_event_t *e)
-{
+void toggle_fan_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[curr_step_idx].fan_on)
-  {
+  if (program.steps[curr_step_idx].fan_on) {
     program.steps[curr_step_idx].fan_on = false;
-  }
-  else
-  {
+  } else {
     program.steps[curr_step_idx].fan_on = true;
   }
   refresh_ui();
 }
 
-void toggle_grill_cb(lv_event_t *e)
-{
+void toggle_grill_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[curr_step_idx].grill_on)
-  {
+  if (program.steps[curr_step_idx].grill_on) {
     program.steps[curr_step_idx].grill_on = false;
-  }
-  else
-  {
-    if (program.steps[curr_step_idx].top_heater_on)
-      program.steps[curr_step_idx].top_heater_on = false;
+  } else {
+    if (program.steps[curr_step_idx].top_heater_on) program.steps[curr_step_idx].top_heater_on = false;
     program.steps[curr_step_idx].grill_on = true;
   }
   refresh_ui();
 }
 
-void toggle_top_heater_cb(lv_event_t *e)
-{
+void toggle_top_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[curr_step_idx].top_heater_on)
-  {
+  if (program.steps[curr_step_idx].top_heater_on) {
     program.steps[curr_step_idx].top_heater_on = false;
-  }
-  else
-  {
-    if (program.steps[curr_step_idx].grill_on)
-      program.steps[curr_step_idx].grill_on = false;
+  } else {
+    if (program.steps[curr_step_idx].grill_on) program.steps[curr_step_idx].grill_on = false;
     program.steps[curr_step_idx].top_heater_on = true;
   }
   refresh_ui();
 }
 
-void toggle_deck_heater_cb(lv_event_t *e)
-{
+void toggle_deck_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  if (program.steps[curr_step_idx].deck_heater_on)
-  {
+  if (program.steps[curr_step_idx].deck_heater_on) {
     program.steps[curr_step_idx].deck_heater_on = false;
-  }
-  else
-  {
+  } else {
     program.steps[curr_step_idx].deck_heater_on = true;
   }
   refresh_ui();

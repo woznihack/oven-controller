@@ -15,7 +15,7 @@
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lv_drivers",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/include/native",
-                "/usr/local/Cellar/sdl2/2.28.5/include",
+                "/usr/local/Cellar/sdl2/2.30.0/include",
                 ""
             ],
             "browse": {
@@ -28,7 +28,7 @@
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lv_drivers",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/include/native",
-                    "/usr/local/Cellar/sdl2/2.28.5/include",
+                    "/usr/local/Cellar/sdl2/2.30.0/include",
                     ""
                 ]
             },

@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <time.h>
 
-#include "shared_data_structures.h"
+#include "baking_program.h"
 #include "ui/ui.h"
 #include "controller/controller.h"
 
@@ -20,11 +20,10 @@ void *controller_thread_function(void *ptr)
 q_queue_t *oven_control_q;
 q_queue_t *oven_monitor_q;
 
-
 MAIN()
 {
-    oven_control_q = q_create(sizeof(oven_data_t)*2);
-    oven_monitor_q = q_create(sizeof(oven_data_t)*2);
+    oven_control_q = q_create(sizeof(baking_program_step_t)*2);
+    oven_monitor_q = q_create(sizeof(baking_program_step_t)*2);
 
     /*Initialize LVGL*/
     lv_init();

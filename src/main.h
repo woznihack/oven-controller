@@ -14,4 +14,12 @@
     if (DEBUG) fprintf(stderr, fmt, ##__VA_ARGS__); \
   } while (0)
 
+#ifndef MIN
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#endif
+
+#ifndef MAX
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
+
 #endif
