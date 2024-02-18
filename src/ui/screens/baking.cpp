@@ -4,7 +4,6 @@
 #include "../../controller/oven.h"
 #include "../../main.h"
 #include "../counter.h"
-#include "../helpers.h"
 #include "../messages.h"
 #include "screens.h"
 
@@ -28,7 +27,6 @@ static void update_monitor_data_cb(oven_monitor_data_t);
 static void refresh_ui_loading();
 static void refresh_ui_baking_completed();
 static void refresh_ui_baking_in_progress();
-static void refresh_ui();
 
 /* styles */
 static lv_style_t container_style;
@@ -547,19 +545,6 @@ static void update_monitor_data_cb(oven_monitor_data_t data) {
   }
 }
 
-static void refresh_ui() {
-  debug("[UI] refreshing baking screen\n");
-  debug("[UI] monitor data ready? %s\n", monitor_data_valid ? "true" : "false");
-
-  // if (program.paused) {
-  //   lv_obj_add_flag(pause_btn, LV_OBJ_FLAG_HIDDEN);
-  //   lv_obj_clear_flag(resume_btn, LV_OBJ_FLAG_HIDDEN);
-  // } else {
-  //   lv_obj_clear_flag(pause_btn, LV_OBJ_FLAG_HIDDEN);
-  //   lv_obj_add_flag(resume_btn, LV_OBJ_FLAG_HIDDEN);
-  // }
-}
-
 static void duration_dec_cb(lv_event_t *e) {
   uint32_t new_duration = MAX(monitor_data.config_duration_m - 1, BAKING_DURATION_M_MIN);
   monitor_data.config_duration_m = new_duration;
@@ -609,53 +594,62 @@ void toggle_light_cb(lv_event_t *e) {
   printf("[UI] LIGHT CB\n");
 
   if (monitor_data.light_on) {
-    printf("[UI] LIGHT OFF\n");
     monitor_data.light_on = false;
+    q_enqueue(oven_control_q, CONTROL_OVEN_LIGHT_OFF, NULL);
   } else {
-    printf("[UI] LIGHT ON\n");
     monitor_data.light_on = true;
+    q_enqueue(oven_control_q, CONTROL_OVEN_LIGHT_ON, NULL);
   }
-  refresh_ui();
 }
 
 void toggle_fan_cb(lv_event_t *e) {
   LV_UNUSED(e);
   if (monitor_data.fan_on) {
     monitor_data.fan_on = false;
+    q_enqueue(oven_control_q, CONTROL_OVEN_FAN_OFF, NULL);
   } else {
     monitor_data.fan_on = true;
+    q_enqueue(oven_control_q, CONTROL_OVEN_FAN_ON, NULL);
   }
-  refresh_ui();
 }
 
 void toggle_grill_cb(lv_event_t *e) {
   LV_UNUSED(e);
   if (monitor_data.grill_on) {
     monitor_data.grill_on = false;
+    q_enqueue(oven_control_q, CONTROL_OVEN_GRILL_OFF, NULL);
   } else {
-    if (monitor_data.top_heater_on) monitor_data.top_heater_on = false;
+    if (monitor_data.top_heater_on) {
+      monitor_data.top_heater_on = false;
+      q_enqueue(oven_control_q, CONTROL_OVEN_TOP_HEATER_OFF, NULL);
+    }
+    q_enqueue(oven_control_q, CONTROL_OVEN_GRILL_ON, NULL);
     monitor_data.grill_on = true;
   }
-  refresh_ui();
 }
 
 void toggle_top_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
   if (monitor_data.top_heater_on) {
     monitor_data.top_heater_on = false;
+    q_enqueue(oven_control_q, CONTROL_OVEN_TOP_HEATER_OFF, NULL);
   } else {
-    if (monitor_data.grill_on) monitor_data.grill_on = false;
+    if (monitor_data.grill_on) {
+      monitor_data.grill_on = false;
+      q_enqueue(oven_control_q, CONTROL_OVEN_GRILL_OFF, NULL);
+    }
     monitor_data.top_heater_on = true;
+    q_enqueue(oven_control_q, CONTROL_OVEN_TOP_HEATER_ON, NULL);
   }
-  refresh_ui();
 }
 
 void toggle_deck_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
   if (monitor_data.deck_heater_on) {
     monitor_data.deck_heater_on = false;
+    q_enqueue(oven_control_q, CONTROL_OVEN_DECK_HEATER_OFF, NULL);
   } else {
     monitor_data.deck_heater_on = true;
+    q_enqueue(oven_control_q, CONTROL_OVEN_DECK_HEATER_ON, NULL);
   }
-  refresh_ui();
 }

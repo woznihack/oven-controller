@@ -73,7 +73,7 @@ oven_monitor_data_t oven_get_monitor_data(oven_t o) {
   d.top_heater_temperature = o.top_heater.current_temperature;
   d.deck_heater_temperature = o.deck_heater.current_temperature;
 
-  if (o.program != NULL && o.program->steps_count > 0){
+  if (o.program != NULL && o.program->steps_count > 0) {
     d.program_step_current = o.current_program_step + 1;
     d.program_steps_total = o.program->steps_count;
     baking_program_step_t current_step = o.program->steps[o.current_program_step];

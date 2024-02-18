@@ -22,9 +22,9 @@ typedef struct {
   baking_program_step_t *steps;
 } baking_program_t;
 
-baking_program_step_t baking_program_step_create();
+void baking_program_init_step(baking_program_step_t *);
 baking_program_t baking_program_create(char *);
-void baking_program_add_step(baking_program_t *, baking_program_step_t);
+void baking_program_add_step(baking_program_t *);
 void baking_program_delete_last_step(baking_program_t *);
 void baking_program_reset(baking_program_t *);
 

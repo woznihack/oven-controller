@@ -91,6 +91,36 @@ void control_queue_handler() {
     if (data.event == CONTROL_OVEN_SET_DURATION_M) {
       oven.program->steps[oven.current_program_step].duration_m = *(uint32_t *)data.payload;
     }
+    if (data.event == CONTROL_OVEN_LIGHT_ON) {
+      oven.program->steps[oven.current_program_step].light_on = true;
+    }
+    if (data.event == CONTROL_OVEN_LIGHT_OFF) {
+      oven.program->steps[oven.current_program_step].light_on = false;
+    }
+    if (data.event == CONTROL_OVEN_FAN_ON) {
+      oven.program->steps[oven.current_program_step].fan_on = true;
+    }
+    if (data.event == CONTROL_OVEN_FAN_OFF) {
+      oven.program->steps[oven.current_program_step].fan_on = false;
+    }
+    if (data.event == CONTROL_OVEN_TOP_HEATER_ON) {
+      oven.program->steps[oven.current_program_step].top_heater_on = true;
+    }
+    if (data.event == CONTROL_OVEN_TOP_HEATER_OFF) {
+      oven.program->steps[oven.current_program_step].top_heater_on = false;
+    }
+    if (data.event == CONTROL_OVEN_DECK_HEATER_ON) {
+      oven.program->steps[oven.current_program_step].deck_heater_on = true;
+    }
+    if (data.event == CONTROL_OVEN_DECK_HEATER_OFF) {
+      oven.program->steps[oven.current_program_step].deck_heater_on = false;
+    }
+    if (data.event == CONTROL_OVEN_GRILL_ON) {
+      oven.program->steps[oven.current_program_step].grill_on = true;
+    }
+    if (data.event == CONTROL_OVEN_GRILL_OFF) {
+      oven.program->steps[oven.current_program_step].grill_on = false;
+    }
   }
 }
 

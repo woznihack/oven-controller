@@ -23,7 +23,8 @@
     "cmath": "cpp",
     "cstdint": "c",
     "__verbose_abort": "cpp",
-    "cstdio": "cpp"
+    "cstdio": "cpp",
+    "system_error": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

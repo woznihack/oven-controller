@@ -6,7 +6,6 @@
 #include "../baking_program.h"
 #include "animations.h"
 #include "counter.h"
-#include "helpers.h"
 #include "messages.h"
 #include "screens/screens.h"
 
@@ -14,7 +13,7 @@ baking_program_t program;
 
 void ui_init(void) {
   program = baking_program_create("Manual");
-  baking_program_add_step(&program, baking_program_step_create());
+  baking_program_add_step(&program);
 
   splash_scr_init();
   program_setup_scr_init();
