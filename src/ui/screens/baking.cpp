@@ -6,6 +6,8 @@
 #include "../counter.h"
 #include "../messages.h"
 #include "screens.h"
+#include "styles.h"
+#include "toggles.h"
 
 /* GLOBALS */
 lv_obj_t *baking_scr;
@@ -17,9 +19,7 @@ bool baking_complete = false;
 /* main */
 static lv_timer_t *screen_update_timer;
 static lv_obj_t *title_lb;
-static void init_styles();
-static void draw_screen_layout();
-static void draw_screen_items();
+static void scr_draw();
 static void scr_load_cb(lv_event_t *e);
 static void scr_unload_cb(lv_event_t *e);
 static void handle_oven_monitor_q(lv_timer_t *timer);
@@ -27,13 +27,6 @@ static void update_monitor_data_cb(oven_monitor_data_t);
 static void refresh_ui_loading();
 static void refresh_ui_baking_completed();
 static void refresh_ui_baking_in_progress();
-
-/* styles */
-static lv_style_t container_style;
-static lv_style_t btns_style;
-static lv_style_t btns_checked_style;
-static lv_style_t btns_medium_style;
-static lv_style_t btns_circle_style;
 
 /* screen layout */
 static lv_obj_t *scr_content;
@@ -99,8 +92,7 @@ static void dump_monitor_data(oven_monitor_data_t data) {
 void baking_scr_init() {
   baking_scr = lv_obj_create(NULL);
   init_styles();
-  draw_screen_layout();
-  draw_screen_items();
+  scr_draw();
   refresh_ui_loading();
 
   lv_obj_add_event_cb(baking_scr, scr_load_cb, LV_EVENT_SCREEN_LOADED, NULL);
@@ -159,44 +151,7 @@ static void scr_unload_cb(lv_event_t *e) {
   lv_timer_del(screen_update_timer);
 }
 
-void init_styles() {
-  lv_style_init(&container_style);
-  lv_style_set_radius(&container_style, 0);
-  lv_style_set_bg_opa(&container_style, LV_OPA_0);
-  lv_style_set_outline_width(&container_style, 0);
-  lv_style_set_border_width(&container_style, 0);
-  lv_style_set_border_opa(&container_style, LV_OPA_30);
-  lv_style_set_pad_all(&container_style, 0);
-  lv_style_set_text_color(&container_style, lv_color_white());
-  lv_style_set_align(&container_style, LV_ALIGN_CENTER);
-  lv_style_set_pad_column(&container_style, 2);
-  lv_style_set_text_align(&container_style, LV_TEXT_ALIGN_CENTER);
-
-  lv_style_init(&btns_style);
-  lv_style_set_radius(&btns_style, 5);
-  lv_style_set_width(&btns_style, 30);
-  lv_style_set_height(&btns_style, 30);
-  lv_style_set_bg_opa(&btns_style, LV_OPA_0);
-
-  lv_style_init(&btns_checked_style);
-  lv_style_set_bg_color(&btns_checked_style, lv_color_hex(0xFF8000));
-  lv_style_set_bg_opa(&btns_checked_style, LV_OPA_100);
-
-  lv_style_init(&btns_medium_style);
-  lv_style_set_radius(&btns_medium_style, 5);
-  lv_style_set_width(&btns_medium_style, 40);
-  lv_style_set_height(&btns_medium_style, 40);
-
-  lv_style_init(&btns_circle_style);
-  lv_style_set_bg_color(&btns_circle_style, lv_color_hex(0xFF8000));
-  lv_style_set_bg_opa(&btns_circle_style, LV_OPA_100);
-  lv_style_set_radius(&btns_circle_style, 40);
-  lv_style_set_width(&btns_circle_style, 40);
-  lv_style_set_height(&btns_circle_style, 40);
-  lv_style_set_text_font(&btns_circle_style, &lv_font_montserrat_16);
-}
-
-void draw_screen_layout() {
+void scr_draw() {
   scr_content = lv_obj_create(baking_scr);
   lv_obj_set_size(scr_content, 240, 320);
   lv_obj_center(scr_content);
@@ -263,8 +218,7 @@ void draw_screen_layout() {
   lv_obj_set_flex_align(bottom_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_size(bottom_bar, LV_PCT(100), 50);
   lv_obj_add_style(bottom_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-}
-void draw_screen_items() {
+
   // TITLE CONTAINER
   title_lb = lv_label_create(top_bar);
   lv_label_set_text_fmt(title_lb, "BAKING");
@@ -281,8 +235,7 @@ void draw_screen_items() {
   lv_obj_add_style(temp_dec_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   temp_dec_btn = lv_btn_create(temp_dec_btn_container);
   lv_obj_set_align(temp_dec_btn, LV_ALIGN_CENTER);
-  lv_obj_add_style(temp_dec_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(temp_dec_btn, &btns_circle_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(temp_dec_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_t *temp_dec_btn_lb = lv_label_create(temp_dec_btn);
   lv_label_set_text_fmt(temp_dec_btn_lb, "+5°C");
   lv_obj_center(temp_dec_btn_lb);
@@ -307,8 +260,7 @@ void draw_screen_items() {
   lv_obj_set_flex_grow(temp_inc_btn_container, 1);
   lv_obj_add_style(temp_inc_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   temp_inc_btn = lv_btn_create(temp_inc_btn_container);
-  lv_obj_add_style(temp_inc_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(temp_inc_btn, &btns_circle_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(temp_inc_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_align(temp_inc_btn, LV_ALIGN_CENTER);
   lv_obj_t *temp_inc_btn_lb = lv_label_create(temp_inc_btn);
   lv_label_set_text_fmt(temp_inc_btn_lb, "+5°C");
@@ -321,8 +273,7 @@ void draw_screen_items() {
   lv_obj_add_style(duration_dec_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   duration_dec_btn = lv_btn_create(duration_dec_btn_container);
   lv_obj_set_align(duration_dec_btn, LV_ALIGN_CENTER);
-  lv_obj_add_style(duration_dec_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(duration_dec_btn, &btns_circle_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(duration_dec_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_t *duration_dec_btn_lb = lv_label_create(duration_dec_btn);
   lv_label_set_text_fmt(duration_dec_btn_lb, "-1m");
   lv_obj_center(duration_dec_btn_lb);
@@ -340,53 +291,18 @@ void draw_screen_items() {
   lv_obj_set_flex_grow(duration_inc_btn_container, 1);
   lv_obj_add_style(duration_inc_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   duration_inc_btn = lv_btn_create(duration_inc_btn_container);
-  lv_obj_add_style(duration_inc_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(duration_inc_btn, &btns_circle_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(duration_inc_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_align(duration_inc_btn, LV_ALIGN_CENTER);
   lv_obj_t *duration_inc_btn_lb = lv_label_create(duration_inc_btn);
   lv_label_set_text_fmt(duration_inc_btn_lb, "+1m");
   lv_obj_center(duration_inc_btn_lb);
 
-  // FEATURES SETUP CONTAINER
-  toggle_light_btn = lv_btn_create(toggles_bar);
-  lv_obj_add_style(toggle_light_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_light_btn, &btns_medium_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_light_btn, &btns_checked_style, LV_PART_MAIN | LV_STATE_CHECKED);
-  lv_obj_t *light_btn_lb = lv_label_create(toggle_light_btn);
-  lv_label_set_text_fmt(light_btn_lb, "L");
-  lv_obj_center(light_btn_lb);
-
-  toggle_fan_btn = lv_btn_create(toggles_bar);
-  lv_obj_add_style(toggle_fan_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_fan_btn, &btns_medium_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_fan_btn, &btns_checked_style, LV_PART_MAIN | LV_STATE_CHECKED);
-  lv_obj_t *fan_btn_lb = lv_label_create(toggle_fan_btn);
-  lv_label_set_text_fmt(fan_btn_lb, "F");
-  lv_obj_center(fan_btn_lb);
-
-  toggle_grill_btn = lv_btn_create(toggles_bar);
-  lv_obj_add_style(toggle_grill_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_grill_btn, &btns_medium_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_grill_btn, &btns_checked_style, LV_PART_MAIN | LV_STATE_CHECKED);
-  lv_obj_t *grill_btn_lb = lv_label_create(toggle_grill_btn);
-  lv_label_set_text_fmt(grill_btn_lb, "G");
-  lv_obj_center(grill_btn_lb);
-
-  toggle_top_heater_btn = lv_btn_create(toggles_bar);
-  lv_obj_add_style(toggle_top_heater_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_top_heater_btn, &btns_medium_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_top_heater_btn, &btns_checked_style, LV_PART_MAIN | LV_STATE_CHECKED);
-  lv_obj_t *top_heater_btn_lb = lv_label_create(toggle_top_heater_btn);
-  lv_label_set_text_fmt(top_heater_btn_lb, "TH");
-  lv_obj_center(top_heater_btn_lb);
-
-  toggle_deck_heater_btn = lv_btn_create(toggles_bar);
-  lv_obj_add_style(toggle_deck_heater_btn, &btns_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_deck_heater_btn, &btns_medium_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_add_style(toggle_deck_heater_btn, &btns_checked_style, LV_PART_MAIN | LV_STATE_CHECKED);
-  lv_obj_t *deck_heater_btn_lb = lv_label_create(toggle_deck_heater_btn);
-  lv_label_set_text_fmt(deck_heater_btn_lb, "DH");
-  lv_obj_center(deck_heater_btn_lb);
+  // TOGGLES SETUP
+  toggle_light_btn = toggle_create(toggles_bar, TOGGLE_LIGHT);
+  toggle_fan_btn = toggle_create(toggles_bar, TOGGLE_FAN);
+  toggle_grill_btn = toggle_create(toggles_bar, TOGGLE_GRILL);
+  toggle_top_heater_btn = toggle_create(toggles_bar, TOGGLE_TOP_HEATER);
+  toggle_deck_heater_btn = toggle_create(toggles_bar, TOGGLE_DECK_HEATER);
 
   // CONTROLS
   stop_btn = lv_btn_create(bottom_bar);
