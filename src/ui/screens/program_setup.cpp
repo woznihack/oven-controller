@@ -12,6 +12,7 @@
 #include "screens.h"
 #include "styles.h"
 #include "toggles.h"
+#include "../components/components.h"
 
 /*********************
  *  GLOBAL VARIABLES
@@ -125,36 +126,33 @@ static void event_send_refresh(lv_obj_t *o) { lv_event_send(o, LV_EVENT_REFRESH,
 static void scr_draw() {
   // LAYOUT
   scr_content = lv_obj_create(program_setup_scr);
-  lv_obj_set_size(scr_content, 240, 320);
-  lv_obj_center(scr_content);
   lv_obj_set_flex_flow(scr_content, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_bg_color(scr_content, lv_color_hex(0x484848), LV_PART_MAIN);
+  lv_obj_add_style(scr_content, &main_container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_scrollbar_mode(scr_content, LV_SCROLLBAR_MODE_OFF);
   lv_obj_clear_flag(scr_content, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_style_pad_all(scr_content, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_pad_row(scr_content, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_size(scr_content, 240, 320);
+  lv_obj_center(scr_content);
 
-  top_bar = lv_obj_create(scr_content);
-  lv_obj_set_size(top_bar, LV_PCT(100), 30);
-  lv_obj_add_style(top_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  top_bar = top_bar_create(scr_content, "BAKING", true, true, back_cb);
 
   steps_bar = lv_obj_create(scr_content);
+  lv_obj_add_style(steps_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_pad_column(steps_bar, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_color(steps_bar, lv_color_hex(0xeab676), LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_bg_opa(steps_bar, LV_OPA_80, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_width(steps_bar, LV_PCT(100));
   lv_obj_set_flex_grow(steps_bar, 1);
-
   lv_obj_set_flex_flow(steps_bar, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(steps_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_style_pad_column(steps_bar, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_size(steps_bar, LV_PCT(100), 40);
-  lv_obj_add_style(steps_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   temperature_bar = lv_obj_create(scr_content);
-  lv_obj_set_flex_flow(temperature_bar, LV_FLEX_FLOW_ROW);
-  lv_obj_set_width(temperature_bar, LV_PCT(100));
-  lv_obj_set_flex_grow(temperature_bar, 1);
   lv_obj_add_style(temperature_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_pad_left(temperature_bar, 10, LV_PART_MAIN);
   lv_obj_set_style_pad_right(temperature_bar, 10, LV_PART_MAIN);
+  lv_obj_set_flex_flow(temperature_bar, LV_FLEX_FLOW_ROW);
+  lv_obj_set_width(temperature_bar, LV_PCT(100));
+  lv_obj_set_flex_grow(temperature_bar, 1);
 
   duration_bar = lv_obj_create(scr_content);
   lv_obj_set_flex_flow(duration_bar, LV_FLEX_FLOW_ROW);
@@ -176,10 +174,6 @@ static void scr_draw() {
   lv_obj_set_size(bottom_bar, LV_PCT(100), 50);
   lv_obj_add_style(bottom_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  // TITLE CONTAINER
-  title_lb = lv_label_create(top_bar);
-  lv_label_set_text_fmt(title_lb, "BAKE CONFIGURATION");
-  lv_obj_center(title_lb);
 
   // STEPS SETUP CONTAINER
   steps_prev_btn = lv_btn_create(steps_bar);
@@ -583,7 +577,7 @@ static void start_cb(lv_event_t *e) {
 
 static void back_cb(lv_event_t *e) {
   LV_UNUSED(e);
-  printf("Is splash screen null? %s\n", splash_scr == NULL ? "true" : "false");
+  debug("Is splash screen null? %s\n", splash_scr == NULL ? "true" : "false");
   lv_scr_load(splash_scr);
   // lv_scr_load_anim(splash_scr, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 500, 300, false);
 }

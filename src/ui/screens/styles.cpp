@@ -1,7 +1,9 @@
 #include "styles.h"
+
 #include <lvgl.h>
 
 /* styles */
+lv_style_t main_container_style;
 lv_style_t container_style;
 lv_style_t counter_btn_style;
 lv_style_t counter_btn_pressed_style;
@@ -10,6 +12,12 @@ lv_style_t counter_btn_img_style;
 lv_style_t toggle_btn_style;
 
 void init_styles() {
+  lv_style_init(&main_container_style);
+  lv_style_set_bg_color(&main_container_style, lv_color_hex(0x313131));
+  lv_style_set_flex_flow(&main_container_style, LV_FLEX_FLOW_COLUMN);
+  lv_style_set_pad_all(&main_container_style, 0);
+  lv_style_set_pad_row(&main_container_style, 0);
+
   lv_style_init(&container_style);
   lv_style_set_radius(&container_style, 0);
   lv_style_set_bg_opa(&container_style, LV_OPA_0);
@@ -46,5 +54,4 @@ void init_styles() {
   lv_style_set_bg_opa(&toggle_btn_style, LV_OPA_100);
   lv_style_set_size(&toggle_btn_style, 40);
   lv_style_set_bg_opa(&toggle_btn_style, LV_OPA_0);
-
 }
