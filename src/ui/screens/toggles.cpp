@@ -27,7 +27,8 @@ lv_obj_t *toggle_create(lv_obj_t *parent, toggles_name_t name) {
   LV_IMG_DECLARE(icons_light_off)
   lv_obj_t *btn = lv_imgbtn_create(parent);
   lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
-  lv_obj_add_style(btn, &toggle_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(btn, &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(btn, &styles->squared_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_imgbtn_set_src(btn, LV_IMGBTN_STATE_CHECKED_RELEASED, NULL, toggles_img_src[name].checked_released, NULL);
   lv_imgbtn_set_src(btn, LV_IMGBTN_STATE_RELEASED, NULL, toggles_img_src[name].released, NULL);
   return btn;

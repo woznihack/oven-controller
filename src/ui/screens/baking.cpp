@@ -3,6 +3,7 @@
 
 #include "../../controller/oven.h"
 #include "../../main.h"
+#include "../components/components.h"
 #include "../counter.h"
 #include "../messages.h"
 #include "screens.h"
@@ -32,8 +33,8 @@ static void refresh_ui_baking_in_progress();
 static lv_obj_t *scr_content;
 static lv_obj_t *top_bar;
 static lv_obj_t *steps_bar;
-static lv_obj_t *temperature_monitor;
-static lv_obj_t *duration_picker;
+static lv_obj_t *temperature_bar;
+static lv_obj_t *duration_bar;
 static lv_obj_t *toggles_bar;
 static lv_obj_t *loading_spinner;
 static lv_obj_t *bottom_bar;
@@ -151,50 +152,42 @@ static void scr_unload_cb(lv_event_t *e) {
   lv_timer_del(screen_update_timer);
 }
 
-void scr_draw() {
+static void scr_draw() {
   scr_content = lv_obj_create(baking_scr);
-  lv_obj_set_size(scr_content, 240, 320);
-  lv_obj_center(scr_content);
-  lv_obj_set_flex_flow(scr_content, LV_FLEX_FLOW_COLUMN);
+  lv_obj_add_style(scr_content, &styles->flex_col_container, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_scrollbar_mode(scr_content, LV_SCROLLBAR_MODE_OFF);
   lv_obj_clear_flag(scr_content, LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_style_pad_all(scr_content, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_bg_color(scr_content, lv_color_hex(0x484848), LV_PART_MAIN);
-  lv_obj_set_style_pad_row(scr_content, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_size(scr_content, 240, 320);
+  lv_obj_center(scr_content);
 
-  top_bar = lv_obj_create(scr_content);
-  lv_obj_set_size(top_bar, LV_PCT(100), 30);
-  lv_obj_add_style(top_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  top_bar = top_bar_create(scr_content, "BAKING", true, false, NULL);
 
   steps_bar = lv_obj_create(scr_content);
-  lv_obj_set_flex_flow(steps_bar, LV_FLEX_FLOW_ROW);
+  lv_obj_set_height(steps_bar, 20);
   lv_obj_set_flex_align(steps_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_style_pad_column(steps_bar, 2, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_size(steps_bar, LV_PCT(100), 40);
-  lv_obj_add_style(steps_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(steps_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  temperature_monitor = lv_obj_create(scr_content);
-  lv_obj_set_flex_flow(temperature_monitor, LV_FLEX_FLOW_ROW);
-  lv_obj_set_width(temperature_monitor, LV_PCT(100));
-  lv_obj_set_flex_grow(temperature_monitor, 1);
-  lv_obj_add_style(temperature_monitor, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_pad_left(temperature_monitor, 10, LV_PART_MAIN);
-  lv_obj_set_style_pad_right(temperature_monitor, 10, LV_PART_MAIN);
+  temperature_bar = lv_obj_create(scr_content);
+  lv_obj_set_flex_grow(temperature_bar, 2);
+  lv_obj_add_style(temperature_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-  duration_picker = lv_obj_create(scr_content);
-  lv_obj_set_flex_flow(duration_picker, LV_FLEX_FLOW_ROW);
-  lv_obj_set_width(duration_picker, LV_PCT(100));
-  lv_obj_set_flex_grow(duration_picker, 1);
-  lv_obj_add_style(duration_picker, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
-  lv_obj_set_style_pad_left(duration_picker, 10, LV_PART_MAIN);
-  lv_obj_set_style_pad_right(duration_picker, 10, LV_PART_MAIN);
+  toggles_bar = lv_obj_create(scr_content);
+  lv_obj_set_height(toggles_bar, 50);
+  lv_obj_set_flex_align(toggles_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_add_style(toggles_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_pad_left(toggles_bar, 5, 0);
+  lv_obj_set_style_pad_right(toggles_bar, 5, 0);
+
+  duration_bar = lv_obj_create(scr_content);
+  lv_obj_set_flex_grow(duration_bar, 2);
+  lv_obj_add_style(duration_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   loading_spinner = lv_obj_create(scr_content);
   lv_obj_set_flex_flow(loading_spinner, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(loading_spinner, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_width(loading_spinner, LV_PCT(100));
   lv_obj_set_flex_grow(loading_spinner, 1);
-  lv_obj_add_style(loading_spinner, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(loading_spinner, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   lv_obj_t *loading_lb = lv_label_create(loading_spinner);
   lv_label_set_text_static(loading_lb, "LOADING...");
@@ -205,45 +198,42 @@ void scr_draw() {
   lv_obj_set_flex_align(completed_panel, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_width(completed_panel, LV_PCT(100));
   lv_obj_set_flex_grow(completed_panel, 1);
-  lv_obj_add_style(completed_panel, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(completed_panel, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   toggles_bar = lv_obj_create(scr_content);
   lv_obj_set_flex_flow(toggles_bar, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(toggles_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_set_size(toggles_bar, LV_PCT(100), 50);
-  lv_obj_add_style(toggles_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(toggles_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   bottom_bar = lv_obj_create(scr_content);
-  lv_obj_set_flex_flow(bottom_bar, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(bottom_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_size(bottom_bar, LV_PCT(100), 50);
-  lv_obj_add_style(bottom_bar, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_height(bottom_bar, 50);
+  lv_obj_add_style(bottom_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_set_style_pad_all(bottom_bar, 0, 0);
+  lv_obj_set_style_pad_column(bottom_bar, 0, 0);
 
-  // TITLE CONTAINER
-  title_lb = lv_label_create(top_bar);
-  lv_label_set_text_fmt(title_lb, "BAKING");
-  lv_obj_center(title_lb);
 
   // STEPS SETUP CONTAINER
   step_name_lb = lv_label_create(steps_bar);
   lv_obj_set_flex_grow(step_name_lb, 1);
 
   // TEMPERATURE SETUP CONTAINER
-  lv_obj_t *temp_dec_btn_container = lv_obj_create(temperature_monitor);
+  lv_obj_t *temp_dec_btn_container = lv_obj_create(temperature_bar);
   lv_obj_set_height(temp_dec_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(temp_dec_btn_container, 1);
-  lv_obj_add_style(temp_dec_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(temp_dec_btn_container, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
   temp_dec_btn = lv_btn_create(temp_dec_btn_container);
   lv_obj_set_align(temp_dec_btn, LV_ALIGN_CENTER);
-  lv_obj_add_style(temp_dec_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(temp_dec_btn, &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_t *temp_dec_btn_lb = lv_label_create(temp_dec_btn);
   lv_label_set_text_fmt(temp_dec_btn_lb, "+5°C");
   lv_obj_center(temp_dec_btn_lb);
 
-  lv_obj_t *temp_lb_container = lv_obj_create(temperature_monitor);
+  lv_obj_t *temp_lb_container = lv_obj_create(temperature_bar);
   lv_obj_set_height(temp_lb_container, LV_PCT(100));
   lv_obj_set_flex_grow(temp_lb_container, 3);
-  lv_obj_add_style(temp_lb_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(temp_lb_container, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   curr_temp_lb = lv_label_create(temp_lb_container);
   lv_obj_set_style_text_font(curr_temp_lb, &lv_font_montserrat_44, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -255,43 +245,43 @@ void scr_draw() {
   lv_obj_set_style_text_align(temp_lb, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_align(temp_lb, LV_ALIGN_CENTER, 0, 25);
 
-  lv_obj_t *temp_inc_btn_container = lv_obj_create(temperature_monitor);
+  lv_obj_t *temp_inc_btn_container = lv_obj_create(temperature_bar);
   lv_obj_set_height(temp_inc_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(temp_inc_btn_container, 1);
-  lv_obj_add_style(temp_inc_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(temp_inc_btn_container, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
   temp_inc_btn = lv_btn_create(temp_inc_btn_container);
-  lv_obj_add_style(temp_inc_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(temp_inc_btn, &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_align(temp_inc_btn, LV_ALIGN_CENTER);
   lv_obj_t *temp_inc_btn_lb = lv_label_create(temp_inc_btn);
   lv_label_set_text_fmt(temp_inc_btn_lb, "+5°C");
   lv_obj_center(temp_inc_btn_lb);
 
   // DURATION SETUP CONTAINER
-  lv_obj_t *duration_dec_btn_container = lv_obj_create(duration_picker);
+  lv_obj_t *duration_dec_btn_container = lv_obj_create(duration_bar);
   lv_obj_set_height(duration_dec_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(duration_dec_btn_container, 1);
-  lv_obj_add_style(duration_dec_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(duration_dec_btn_container, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
   duration_dec_btn = lv_btn_create(duration_dec_btn_container);
   lv_obj_set_align(duration_dec_btn, LV_ALIGN_CENTER);
-  lv_obj_add_style(duration_dec_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(duration_dec_btn, &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_t *duration_dec_btn_lb = lv_label_create(duration_dec_btn);
   lv_label_set_text_fmt(duration_dec_btn_lb, "-1m");
   lv_obj_center(duration_dec_btn_lb);
 
-  lv_obj_t *remaining_m_lb_container = lv_obj_create(duration_picker);
+  lv_obj_t *remaining_m_lb_container = lv_obj_create(duration_bar);
   lv_obj_set_height(remaining_m_lb_container, LV_PCT(100));
   lv_obj_set_flex_grow(remaining_m_lb_container, 3);
-  lv_obj_add_style(remaining_m_lb_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(remaining_m_lb_container, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
   remaining_m_lb = lv_label_create(remaining_m_lb_container);
   lv_obj_set_style_text_font(remaining_m_lb, &lv_font_montserrat_32, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_align(remaining_m_lb, LV_ALIGN_CENTER);
 
-  lv_obj_t *duration_inc_btn_container = lv_obj_create(duration_picker);
+  lv_obj_t *duration_inc_btn_container = lv_obj_create(duration_bar);
   lv_obj_set_height(duration_inc_btn_container, LV_PCT(100));
   lv_obj_set_flex_grow(duration_inc_btn_container, 1);
-  lv_obj_add_style(duration_inc_btn_container, &container_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(duration_inc_btn_container, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
   duration_inc_btn = lv_btn_create(duration_inc_btn_container);
-  lv_obj_add_style(duration_inc_btn, &counter_btn_style, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_obj_add_style(duration_inc_btn, &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_align(duration_inc_btn, LV_ALIGN_CENTER);
   lv_obj_t *duration_inc_btn_lb = lv_label_create(duration_inc_btn);
   lv_label_set_text_fmt(duration_inc_btn_lb, "+1m");
@@ -334,8 +324,8 @@ void scr_draw() {
 static void refresh_ui_baking_completed() {
   // hides everything but the spinner
   lv_obj_add_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(duration_picker, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(temperature_bar, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(duration_bar, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(loading_spinner, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
@@ -395,20 +385,20 @@ static void refresh_ui_baking_in_progress() {
     monitor_data_valid = true;
     if (monitor_data.current_state == OVEN_S_PREHEATING) {
       lv_obj_clear_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temperature_bar, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(temp_lb, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
     } else if (monitor_data.current_state == OVEN_S_BAKING) {
       lv_obj_clear_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(duration_picker, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temperature_bar, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(duration_bar, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(temp_lb, LV_OBJ_FLAG_HIDDEN);
       lv_obj_clear_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
     } else if (monitor_data.current_state == OVEN_S_COOLDOWN) {
       lv_obj_clear_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
-      lv_obj_clear_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
+      lv_obj_clear_flag(temperature_bar, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(temp_dec_btn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(temp_inc_btn, LV_OBJ_FLAG_HIDDEN);
       lv_obj_add_flag(temp_lb, LV_OBJ_FLAG_HIDDEN);
@@ -421,8 +411,8 @@ static void refresh_ui_baking_in_progress() {
 static void refresh_ui_loading() {
   // hides everything but the spinner
   lv_obj_add_flag(steps_bar, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(temperature_monitor, LV_OBJ_FLAG_HIDDEN);
-  lv_obj_add_flag(duration_picker, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(temperature_bar, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_flag(duration_bar, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(toggles_bar, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(bottom_bar, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_flag(completed_panel, LV_OBJ_FLAG_HIDDEN);

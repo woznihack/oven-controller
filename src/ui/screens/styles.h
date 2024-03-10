@@ -4,13 +4,22 @@
 #include <lvgl.h>
 
 /* styles */
-extern lv_style_t main_container_style;
-extern lv_style_t container_style;
-extern lv_style_t counter_btn_style;
-extern lv_style_t counter_btn_pressed_style;
-extern lv_style_t counter_btn_disabled_style;
-extern lv_style_t counter_btn_img_style;
-extern lv_style_t toggle_btn_style;
+typedef struct {
+  lv_style_t top_bar;
+  lv_style_t flex_col_container;
+  lv_style_t flex_row_container;
+  lv_style_t transparent_btn;
+  lv_style_t transparent_pressed_btn;
+  lv_style_t squared_btn;
+  lv_style_t steps_bar_btn;
+  lv_style_t steps_bar_active_btn;
+  lv_style_t btns_bar_btn;
+  lv_style_t btns_bar_main_btn;
+  lv_style_t disabled;
+  lv_style_t centered_content_container;
+} styles_t;
+
+extern styles_t * styles;
 
 void init_styles();
 
