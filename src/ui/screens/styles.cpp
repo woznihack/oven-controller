@@ -47,6 +47,12 @@ void init_styles() {
   lv_style_set_align(&styles->flex_row_container, LV_ALIGN_CENTER);
   lv_style_set_text_align(&styles->flex_row_container, LV_TEXT_ALIGN_CENTER);
 
+  lv_style_init(&styles->flex_row_container_title);
+  lv_style_set_width(&styles->flex_row_container_title, LV_PCT(100));
+  lv_style_set_text_font(&styles->flex_row_container_title, &lv_font_montserrat_10);
+  lv_style_set_text_align(&styles->flex_row_container_title, LV_TEXT_ALIGN_CENTER);
+  lv_style_set_y(&styles->flex_row_container_title, 10);
+
   lv_style_init(&styles->centered_content_container);
   lv_style_set_bg_opa(&styles->centered_content_container, LV_OPA_0);
   lv_style_set_align(&styles->centered_content_container, LV_ALIGN_CENTER);

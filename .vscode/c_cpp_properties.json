@@ -10,10 +10,12 @@
             "includePath": [
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/include",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/src",
+                "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/PID",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/runner",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl_hal",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lv_drivers",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl",
+                "/Users/arturo.dilecce/Documents/Arduino/OvenController/.pio/libdeps/native/ArduinoFake/src",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/include/native",
                 "/usr/local/Cellar/sdl2/2.30.0/include",
                 ""
@@ -23,22 +25,25 @@
                 "path": [
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/include",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/src",
+                    "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/PID",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/runner",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl_hal",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lv_drivers",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl",
+                    "/Users/arturo.dilecce/Documents/Arduino/OvenController/.pio/libdeps/native/ArduinoFake/src",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/include/native",
                     "/usr/local/Cellar/sdl2/2.30.0/include",
                     ""
                 ]
             },
             "defines": [
-                "PLATFORMIO=60113",
+                "PLATFORMIO=60114",
                 "LV_LVGL_H_INCLUDE_SIMPLE",
                 "LV_CONF_INCLUDE_SIMPLE",
                 "LV_CONF_PATH=lv_conf.h",
                 ""
             ],
+            "cppStandard": "c++11",
             "compilerPath": "/usr/bin/gcc",
             "compilerArgs": [
                 ""

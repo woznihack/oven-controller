@@ -1,42 +1,61 @@
-#include <runner.h>
-#include <pthread.h>
+#include <Arduino.h>
 #include <lv_conf.h>
-#include <lvgl_hal.h>
-#include <stdio.h>
 #include <lvgl.h>
-#include <unistd.h>
+#include <lvgl_hal.h>
+#include <runner.h>
+#include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "baking_program.h"
-#include "ui/ui.h"
 #include "controller/controller.h"
+#include "controller/oven.h"
+#include "settings.h"
+#include "ui/ui.h"
 
+#if EMULATION
+
+using namespace fakeit;
+#include <pthread.h>
+
+#include <chrono>
+#include <iostream>
 pthread_t controller_thread;
-void *controller_thread_function(void *ptr)
-{
-    controller_loop();
-}
+void *controller_thread_function(void *ptr) { controller_loop(); }
+#endif
 
 q_queue_t *oven_control_q;
 q_queue_t *oven_monitor_q;
 
-MAIN()
-{
-    oven_control_q = q_create(sizeof(baking_program_step_t)*2);
-    oven_monitor_q = q_create(sizeof(baking_program_step_t)*2);
+MAIN() {
+#if EMULATION
 
-    /*Initialize LVGL*/
-    lv_init();
-    controller_init();
+  When(Method(ArduinoFake(), millis)).AlwaysDo([]() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(steady_clock::now().time_since_epoch()).count();
+  });
+#endif
 
-    /*Initialize the HAL (display, input devices, tick) for LVGL*/
-    hal_setup();
-    ui_init();
+  oven_control_q = q_create(sizeof(baking_program_t) + BAKING_MAX_STEPS * sizeof(baking_program_step_t) * 2);
+  oven_monitor_q = q_create(sizeof(oven_monitor_data_t));
 
-    pthread_create(&controller_thread, NULL, controller_thread_function, NULL);
+  /*Initialize LVGL*/
+  lv_init();
+  controller_init();
 
-    hal_loop(); // can only be called by main thread
+  /*Initialize the HAL (display, input devices, tick) for LVGL*/
+  hal_setup();
+  ui_init();
 
-    pthread_join(controller_thread, NULL);
-    return 0;
+#if EMULATION
+  pthread_create(&controller_thread, NULL, controller_thread_function, NULL);
+#endif
+
+  hal_loop();  // can only be called by main thread
+
+#if EMULATION
+  pthread_join(controller_thread, NULL);
+#endif
+
+  return 0;
 }

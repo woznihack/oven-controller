@@ -95,7 +95,6 @@ static void temp_dec_cb(lv_event_t *e);
 static void duration_inc_cb(lv_event_t *e);
 static void duration_dec_cb(lv_event_t *e);
 static void toggle_event_cb(lv_event_t *e);
-static void toggles_top_heater_radio_cb(lv_event_t *e);
 static void start_cb(lv_event_t *e);
 static void back_cb(lv_event_t *e);
 
@@ -112,8 +111,7 @@ void program_setup_scr_init() {
 static void debug_step() {
   debug("[UI] ---------- \n");
   debug("[UI] Curr step: \n");
-  debug("[UI] Top °C  %d\n", curr_step.top_heater_temperature);
-  debug("[UI] Deck °C %d\n", curr_step.deck_heater_temperature);
+  debug("[UI] Temperature °C  %d\n", curr_step.temperature);
   debug("[UI] Dur M   %d\n", curr_step.duration_m);
   debug("[UI] light   %s\n", curr_step.light_on ? "on" : "off");
   debug("[UI] fan     %s\n", curr_step.fan_on ? "on" : "off");
@@ -144,16 +142,26 @@ static void scr_draw() {
   lv_obj_set_flex_grow(temperature_bar, 2);
   lv_obj_add_style(temperature_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+  lv_obj_t *temperature_bar_lb = lv_label_create(temperature_bar);
+  lv_obj_add_style(temperature_bar_lb, &styles->flex_row_container_title, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_label_set_text(temperature_bar_lb, "TEMPERATURE");
+  lv_obj_add_flag(temperature_bar_lb, LV_OBJ_FLAG_FLOATING);
+
+  duration_bar = lv_obj_create(scr_content);
+  lv_obj_set_flex_grow(duration_bar, 2);
+  lv_obj_add_style(duration_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+  lv_obj_t *duration_bar_lb = lv_label_create(duration_bar);
+  lv_obj_add_style(duration_bar_lb, &styles->flex_row_container_title, LV_PART_MAIN | LV_STATE_DEFAULT);
+  lv_label_set_text(duration_bar_lb, "DURATION");
+  lv_obj_add_flag(duration_bar_lb, LV_OBJ_FLAG_FLOATING);
+
   toggles_bar = lv_obj_create(scr_content);
   lv_obj_set_height(toggles_bar, 50);
   lv_obj_set_flex_align(toggles_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
   lv_obj_add_style(toggles_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
   lv_obj_set_style_pad_left(toggles_bar, 5, 0);
   lv_obj_set_style_pad_right(toggles_bar, 5, 0);
-
-  duration_bar = lv_obj_create(scr_content);
-  lv_obj_set_flex_grow(duration_bar, 2);
-  lv_obj_add_style(duration_bar, &styles->flex_row_container, LV_PART_MAIN | LV_STATE_DEFAULT);
 
   bottom_bar = lv_obj_create(scr_content);
   lv_obj_set_flex_align(bottom_bar, LV_FLEX_ALIGN_SPACE_EVENLY, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -168,31 +176,13 @@ static void scr_draw() {
   LV_IMG_DECLARE(controls_play);
 
   // // STEPS SETUP CONTAINER
-  // steps_prev_btn = lv_btn_create(steps_bar);
-  // lv_obj_add_style(steps_prev_btn, &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
-  // lv_obj_add_style(steps_prev_btn, &styles->disabled, LV_PART_MAIN | LV_STATE_DISABLED);
-
-  // lv_obj_t *steps_prev_btn_img = lv_img_create(steps_prev_btn);
-  // lv_img_set_src(steps_prev_btn_img, &controls_prev);
-  // lv_obj_center(steps_prev_btn_img);
-
-  // step_name_lb = lv_label_create(steps_bar);
-  // lv_obj_set_flex_grow(step_name_lb, 1);
-
-  // steps_next_btn = lv_btn_create(steps_bar);
-  // lv_obj_add_style(steps_next_btn, &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
-  // lv_obj_add_style(steps_next_btn, &styles->disabled, LV_PART_MAIN | LV_STATE_DISABLED);
-
-  // lv_obj_t *steps_next_btn_img = lv_img_create(steps_next_btn);
-  // lv_img_set_src(steps_next_btn_img, &controls_next);
-  // lv_obj_center(steps_next_btn_img);
-  for(int s = 0; s < BAKING_MAX_STEPS; s++){
+  for (int s = 0; s < BAKING_MAX_STEPS; s++) {
     steps_btn[s] = lv_btn_create(steps_bar);
     lv_obj_add_style(steps_btn[s], &styles->transparent_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_add_style(steps_btn[s], &styles->steps_bar_btn, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_add_flag(steps_btn[s], LV_OBJ_FLAG_HIDDEN);
     lv_obj_t *step_lb = lv_label_create(steps_btn[s]);
-    lv_label_set_text_fmt(step_lb, "step %d", s+1);
+    lv_label_set_text_fmt(step_lb, "step %d", s + 1);
     lv_obj_center(step_lb);
   }
 
@@ -294,26 +284,23 @@ static void scr_draw() {
   lv_label_set_text(start_btn_lb, "START");
   lv_obj_set_width(start_btn_lb, LV_PCT(100));
   lv_obj_center(start_btn_lb);
+
+  // ui refresh cbs
+  lv_obj_add_event_cb(steps_bar, steps_refresh_cb, LV_EVENT_REFRESH, NULL);
+  lv_obj_add_event_cb(temperature_bar, temperature_refresh_cb, LV_EVENT_REFRESH, NULL);
+  lv_obj_add_event_cb(duration_bar, duration_refresh_cb, LV_EVENT_REFRESH, NULL);
+  lv_obj_add_event_cb(toggles_bar, toggles_refresh_cb, LV_EVENT_REFRESH, NULL);
+
+  event_send_refresh(steps_bar);
+  event_send_refresh(temperature_bar);
+  event_send_refresh(duration_bar);
+  event_send_refresh(toggles_bar);
 }
 
 static void steps_refresh_cb(lv_event_t *e) {
   debug("[UI] Steps bar refresh\n");
 
-  // // handle prev btn
-  // if (curr_step_idx > 0) {
-  //   lv_obj_clear_state(steps_prev_btn, LV_STATE_DISABLED);
-  // } else {
-  //   lv_obj_add_state(steps_prev_btn, LV_STATE_DISABLED);
-  // }
-
-  // // handle next btn
-  // if (curr_step_idx < program.steps_count - 1) {
-  //   lv_obj_clear_state(steps_next_btn, LV_STATE_DISABLED);
-  // } else {
-  //   lv_obj_add_state(steps_next_btn, LV_STATE_DISABLED);
-  // }
-
-  for(int s = 0; s < BAKING_MAX_STEPS; s++){
+  for (int s = 0; s < BAKING_MAX_STEPS; s++) {
     if (s < program.steps_count) {
       lv_obj_clear_flag(steps_btn[s], LV_OBJ_FLAG_HIDDEN);
     } else {
@@ -339,13 +326,11 @@ static void steps_refresh_cb(lv_event_t *e) {
   } else {
     lv_obj_add_state(steps_del_btn, LV_STATE_DISABLED);
   }
-
-  // lv_label_set_text_fmt(step_name_lb, "step %d/%d", curr_step_idx + 1, program.steps_count);
 }
 
 static void temperature_refresh_cb(lv_event_t *e) {
   debug("[UI] Temperature bar refresh\n");
-  temp_counter.value = curr_step.top_heater_temperature;
+  temp_counter.value = curr_step.temperature;
 
   lv_label_set_text_fmt(temp_lb, "%d°C", (int)temp_counter.value);
 
@@ -400,10 +385,10 @@ static void toggles_refresh_cb(lv_event_t *e) {
   lv_imgbtn_set_state(toggle_deck_heater_btn, curr_step.deck_heater_on ? LV_IMGBTN_STATE_CHECKED_RELEASED : LV_IMGBTN_STATE_RELEASED);
 }
 
-static void steps_goto_cb(lv_event_t *t){
+static void steps_goto_cb(lv_event_t *t) {
   lv_obj_t *btn = lv_event_get_target(t);
-  for (uint16_t s = 0; s < program.steps_count; s++){
-    if (btn == steps_btn[s]){
+  for (uint16_t s = 0; s < program.steps_count; s++) {
+    if (btn == steps_btn[s]) {
       debug("[UI] Steps going to %d\n", s);
       steps_goto(s, true);
       continue;
@@ -411,16 +396,7 @@ static void steps_goto_cb(lv_event_t *t){
   }
 }
 static void scr_load_cb(lv_event_t *e) {
-  lv_obj_add_event_cb(steps_bar, steps_refresh_cb, LV_EVENT_REFRESH, NULL);
-  lv_obj_add_event_cb(temperature_bar, temperature_refresh_cb, LV_EVENT_REFRESH, NULL);
-  lv_obj_add_event_cb(duration_bar, duration_refresh_cb, LV_EVENT_REFRESH, NULL);
-  lv_obj_add_event_cb(toggles_bar, toggles_refresh_cb, LV_EVENT_REFRESH, NULL);
-
-  // add steps bar callbacks
-  // lv_obj_add_event_cb(steps_prev_btn, steps_prev_cb, LV_EVENT_CLICKED, NULL);
-  // lv_obj_add_event_cb(steps_next_btn, steps_next_cb, LV_EVENT_CLICKED, NULL);
-
-  for(int s = 0; s < BAKING_MAX_STEPS; s++){
+  for (int s = 0; s < BAKING_MAX_STEPS; s++) {
     lv_obj_add_event_cb(steps_btn[s], steps_goto_cb, LV_EVENT_CLICKED, NULL);
   }
   lv_obj_add_event_cb(steps_add_btn, steps_add_cb, LV_EVENT_CLICKED, NULL);
@@ -440,9 +416,6 @@ static void scr_load_cb(lv_event_t *e) {
   lv_obj_add_event_cb(toggle_grill_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.grill_on);
   lv_obj_add_event_cb(toggle_top_heater_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.top_heater_on);
   lv_obj_add_event_cb(toggle_deck_heater_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.deck_heater_on);
-
-  lv_obj_add_event_cb(toggle_grill_btn, toggles_top_heater_radio_cb, LV_EVENT_VALUE_CHANGED, NULL);
-  lv_obj_add_event_cb(toggle_top_heater_btn, toggles_top_heater_radio_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
   // add btns callbacks
   lv_obj_add_event_cb(start_btn, start_cb, LV_EVENT_CLICKED, NULL);
@@ -471,9 +444,6 @@ static void scr_unload_cb(lv_event_t *e) {
   lv_obj_remove_event_cb_with_user_data(toggle_grill_btn, toggle_event_cb, &curr_step.grill_on);
   lv_obj_remove_event_cb_with_user_data(toggle_top_heater_btn, toggle_event_cb, &curr_step.top_heater_on);
   lv_obj_remove_event_cb_with_user_data(toggle_deck_heater_btn, toggle_event_cb, &curr_step.deck_heater_on);
-
-  lv_obj_remove_event_cb(toggle_grill_btn, toggles_top_heater_radio_cb);
-  lv_obj_remove_event_cb(toggle_top_heater_btn, toggles_top_heater_radio_cb);
 
   lv_obj_remove_event_cb(start_btn, start_cb);
 }
@@ -558,8 +528,7 @@ static void temp_dec_cb(lv_event_t *e) {
   if (counter_should_change(e)) {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value -= (user_data->value <= BAKING_TEMPERATURE_MIN) ? 0 : 1;
-    curr_step.top_heater_temperature = (uint32_t)user_data->value;
-    curr_step.deck_heater_temperature = (uint32_t)user_data->value;
+    curr_step.temperature = (uint32_t)user_data->value;
     event_send_refresh(temperature_bar);
   }
 }
@@ -568,8 +537,7 @@ static void temp_inc_cb(lv_event_t *e) {
   if (counter_should_change(e)) {
     counter_t *user_data = (counter_t *)lv_event_get_user_data(e);
     user_data->value += (user_data->value >= BAKING_TEMPERATURE_MAX) ? 0 : 1;
-    curr_step.top_heater_temperature = (uint32_t)user_data->value;
-    curr_step.deck_heater_temperature = (uint32_t)user_data->value;
+    curr_step.temperature = (uint32_t)user_data->value;
     event_send_refresh(temperature_bar);
   }
 }
@@ -578,29 +546,21 @@ static void toggle_event_cb(lv_event_t *e) {
   LV_UNUSED(e);
   lv_event_code_t code = lv_event_get_code(e);
   if (code == LV_EVENT_VALUE_CHANGED) {
+    // toggle the value of the clicked button
     lv_obj_t *obj = lv_event_get_target(e);
     bool *flag = (bool *)lv_event_get_user_data(e);
-    bool prev_value = *flag ? true : false;
-    *flag = lv_obj_has_state(obj, LV_STATE_CHECKED);
-    event_send_refresh(toggles_bar);
-  }
-}
+    *flag = !*flag;
 
-static void toggles_top_heater_radio_cb(lv_event_t *e) {
-  lv_obj_t *target = lv_event_get_target(e);
-
-  bool grill_checked = lv_obj_has_state(toggle_grill_btn, LV_STATE_CHECKED);
-  bool top_heater_checked = lv_obj_has_state(toggle_top_heater_btn, LV_STATE_CHECKED);
-
-  if (grill_checked && top_heater_checked) {
+    // handle grill toggle and top heater toggle as radio buttons
+    lv_obj_t *target = lv_event_get_target(e);
     if (target == toggle_grill_btn) {
       curr_step.top_heater_on = false;
-      lv_imgbtn_set_state(toggle_top_heater_btn, LV_IMGBTN_STATE_RELEASED);
     }
-    if (target == toggle_top_heater_btn) {
+    if (target == toggle_top_heater_btn){
       curr_step.grill_on = false;
-      lv_imgbtn_set_state(toggle_grill_btn, LV_IMGBTN_STATE_RELEASED);
     }
+
+    event_send_refresh(toggles_bar);
   }
 }
 

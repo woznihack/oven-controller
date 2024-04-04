@@ -13,7 +13,8 @@
 baking_program_t program;
 
 void ui_init(void) {
-  program = baking_program_create("Manual");
+  char program_name[] = "Manual";
+  program = baking_program_create(program_name);
 
   init_styles();
   splash_scr_init();

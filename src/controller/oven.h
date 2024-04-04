@@ -2,14 +2,13 @@
 #define OVEN_STATE_H
 
 #include <stdint.h>
-#include <time.h>
 
 #include "../settings.h"
 #include "../baking_program.h"
-#include "heater.h"
+#include <PID_v1.h>
 
 // typedefs
-typedef enum { OVEN_S_IDLE = 0, OVEN_S_PREHEATING, OVEN_S_BAKING, OVEN_S_COOLDOWN } oven_state_t;
+typedef enum { OVEN_S_IDLE = 0, OVEN_S_PREHEATING, OVEN_S_BAKING, OVEN_S_BAKING_PAUSED, OVEN_S_COOLDOWN } oven_state_t;
 
 typedef struct {
   bool light_on;
@@ -17,9 +16,7 @@ typedef struct {
   bool top_heater_on;
   bool deck_heater_on;
   bool grill_on;
-  uint32_t avg_heater_temperature;
-  uint32_t deck_heater_temperature;
-  uint32_t top_heater_temperature;
+  uint32_t temperature;
   uint32_t remaining_m;
   oven_state_t current_state;
 
@@ -30,22 +27,37 @@ typedef struct {
 } oven_monitor_data_t;
 
 typedef struct {
+  PID *pid;
+  double Kp;
+  double Ki;
+  double Kd;
+  double input;
+  double output;
+  double setpoint;
+} heater_control_t;
+
+typedef struct {
   oven_state_t current_state;
-  time_t state_start_s[4];
+  uint32_t state_start_ms[4];
 
-  heater_t top_heater;
-  heater_t deck_heater;
-
-  uint16_t current_program_step;
   baking_program_t *program;
+
+  uint32_t last_probe_read_ms;
+  uint32_t control_window_start_ms;
+  uint16_t chamber_probe_reading;
+
+  heater_control_t top_heater_control;
+  heater_control_t deck_heater_control;
 } oven_t;
 
-static const char *oven_state_strings[] = {"IDLE", "PREHEATING", "BAKING", "COOLDOWN"};
+static const char *oven_state_strings[] = {"IDLE", "PREHEATING", "BAKING", "PAUSED", "COOLDOWN"};
 
 // exposed functions
 oven_t oven_create();
-void oven_loop(oven_t *);
-void oven_change_state(oven_t *, oven_state_t);
-oven_monitor_data_t oven_get_monitor_data(oven_t);
+void oven_read_probes(oven_t *);
+void oven_handle_state(oven_t *);
+void oven_handle_actuators(oven_t *);
+void oven_state_change(oven_t *, oven_state_t);
+oven_monitor_data_t oven_get_monitor_data(oven_t *);
 
 #endif  // OVEN_STATE_H

@@ -8,6 +8,7 @@ typedef struct {
   lv_style_t top_bar;
   lv_style_t flex_col_container;
   lv_style_t flex_row_container;
+  lv_style_t flex_row_container_title;
   lv_style_t transparent_btn;
   lv_style_t transparent_pressed_btn;
   lv_style_t squared_btn;
