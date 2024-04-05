@@ -11,5 +11,4 @@ void splash_scr_init();
 void program_setup_scr_init();
 void baking_scr_init();
 
-extern struct Settings settings;
 #endif
