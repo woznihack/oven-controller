@@ -1,27 +1,7 @@
 {
-  "cmake.configureOnOpen": false,
   "files.associations": {
     "*.patch": "diff",
-    "stdbool.h": "c",
-    "__availability": "cpp",
-    "__config": "cpp",
-    "__locale": "cpp",
-    "chrono": "cpp",
-    "ctime": "cpp",
-    "locale": "cpp",
-    "algorithm": "cpp",
-    "*.tcc": "cpp",
-    "charconv": "cpp",
-    "format": "cpp",
-    "iomanip": "cpp",
-    "limits": "cpp",
-    "numeric": "cpp",
-    "ratio": "cpp",
-    "streambuf": "cpp",
-    "tuple": "cpp",
-    "type_traits": "cpp",
-    "cmath": "cpp",
-    "cstdint": "c"
-  },
-  "C_Cpp.errorSquiggles": "disabled"
+    "compare": "cpp",
+    "cstdint": "cpp"
+  }
 }

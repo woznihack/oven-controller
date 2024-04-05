@@ -29,7 +29,11 @@ void counter_add_event_cb(lv_obj_t *o, lv_event_cb_t cb, void *user_data)
 
 void counter_remove_event_cb(lv_obj_t *o, lv_event_cb_t cb, void *user_data)
 {
-  lv_obj_remove_event_cb_with_user_data(o, cb, user_data);
+  bool removed;
+  do
+  {
+    removed = lv_obj_remove_event_cb_with_user_data(o, cb, user_data);
+  } while (removed);
 }
 
 bool counter_should_change(lv_event_t *e)
