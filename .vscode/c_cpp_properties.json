@@ -16,6 +16,7 @@
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl",
                 "/Users/arturo.dilecce/Documents/Arduino/OvenController/include/native",
                 "/usr/local/Cellar/sdl2/2.28.5/include",
+                "/Users/arturo.dilecce/Documents/Arduino/OvenController/.pio/libdeps/native/ArduinoFake/src",
                 ""
             ],
             "browse": {
@@ -29,11 +30,12 @@
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/lib/lvgl",
                     "/Users/arturo.dilecce/Documents/Arduino/OvenController/include/native",
                     "/usr/local/Cellar/sdl2/2.28.5/include",
+                    "/Users/arturo.dilecce/Documents/Arduino/OvenController/.pio/libdeps/native/ArduinoFake/src",
                     ""
                 ]
             },
             "defines": [
-                "PLATFORMIO=60113",
+                "PLATFORMIO=60114",
                 "LV_LVGL_H_INCLUDE_SIMPLE",
                 "LV_CONF_INCLUDE_SIMPLE",
                 "LV_CONF_PATH=lv_conf.h",
