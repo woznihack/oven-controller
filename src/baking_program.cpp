@@ -13,7 +13,6 @@ void baking_program_init_step(baking_program_step_t *s) {
   s->fan_on = false;
   s->deck_heater_on = true;
   s->top_heater_on = true;
-  s->grill_on = false;
 }
 
 baking_program_t baking_program_create(char *program_name) {
@@ -139,7 +138,14 @@ bool baking_program_current_step_is_complete(baking_program_t *p) {
   return remaining_s <= 0.0;
 }
 
-baking_program_step_t *baking_program_current_step(baking_program_t *p) {
+baking_program_step_t *baking_program_get_step(baking_program_t *p, uint16_t step_idx) {
+  if (step_idx < 0 || step_idx >= p->steps_count) {
+    return NULL;
+  }
+
+  return &p->steps[step_idx];
+}
+baking_program_step_t *baking_program_get_current_step(baking_program_t *p) {
   if (p->current_step_idx == UINT16_MAX || p->current_step_idx >= p->steps_count) {
     return NULL;
   }

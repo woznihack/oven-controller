@@ -54,19 +54,18 @@ PID::PID(double* Input, double* Output, double* Setpoint,
  **********************************************************************************/
 bool PID::Compute()
 {
+
    if(!inAuto) return false;
    unsigned long now = millis();
    unsigned long timeChange = (now - lastTime);
    if(timeChange>=SampleTime)
    {
-
       /*Compute all the working error variables*/
       double input = *myInput;
       double error = *mySetpoint - input;
       double dInput = (input - lastInput);
       outputSum+= (ki * error);
 
-      printf("[PID] Kp: %.2f, Ki: %.2f, Kd: %.2f, Input=%.4f, Setpoint: %.2f, Error: %.2f\n", kp,  ki, kd, *myInput, *mySetpoint, error);
 
       /*Add Proportional on Measurement, if P_ON_M is specified*/
       if(!pOnE) outputSum-= kp * dInput;

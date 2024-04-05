@@ -10,7 +10,6 @@ typedef struct {
   bool fan_on;
   bool top_heater_on;
   bool deck_heater_on;
-  bool grill_on;
 
   uint32_t temperature;
   uint32_t duration_m;
@@ -39,6 +38,7 @@ bool baking_program_is_complete(baking_program_t *);
 bool baking_program_current_step_is_complete(baking_program_t *);
 uint16_t baking_program_current_step_remaining_m(baking_program_t *);
 bool baking_program_goto_next_step(baking_program_t *);
-baking_program_step_t * baking_program_current_step(baking_program_t *);
+baking_program_step_t * baking_program_get_current_step(baking_program_t *);
+baking_program_step_t * baking_program_get_step(baking_program_t *, uint16_t);
 
 #endif

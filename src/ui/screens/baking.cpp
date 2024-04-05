@@ -61,12 +61,10 @@ static void duration_dec_cb(lv_event_t *e);
 /* toggles bar */
 static lv_obj_t *toggle_light_btn;
 static lv_obj_t *toggle_fan_btn;
-static lv_obj_t *toggle_grill_btn;
 static lv_obj_t *toggle_top_heater_btn;
 static lv_obj_t *toggle_deck_heater_btn;
 static void toggle_light_cb(lv_event_t *e);
 static void toggle_fan_cb(lv_event_t *e);
-static void toggle_grill_cb(lv_event_t *e);
 static void toggle_top_heater_cb(lv_event_t *e);
 static void toggle_deck_heater_cb(lv_event_t *e);
 
@@ -115,7 +113,6 @@ static void scr_load_cb(lv_event_t *e) {
   lv_obj_add_event_cb(duration_dec_btn, duration_dec_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(toggle_light_btn, toggle_light_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(toggle_fan_btn, toggle_fan_cb, LV_EVENT_CLICKED, NULL);
-  lv_obj_add_event_cb(toggle_grill_btn, toggle_grill_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(toggle_top_heater_btn, toggle_top_heater_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(toggle_deck_heater_btn, toggle_deck_heater_cb, LV_EVENT_CLICKED, NULL);
   lv_obj_add_event_cb(stop_btn, stop_cb, LV_EVENT_CLICKED, NULL);
@@ -136,7 +133,6 @@ static void scr_unload_cb(lv_event_t *e) {
   lv_obj_remove_event_cb(duration_dec_btn, duration_dec_cb);
   lv_obj_remove_event_cb(toggle_light_btn, toggle_light_cb);
   lv_obj_remove_event_cb(toggle_fan_btn, toggle_fan_cb);
-  lv_obj_remove_event_cb(toggle_grill_btn, toggle_grill_cb);
   lv_obj_remove_event_cb(toggle_top_heater_btn, toggle_top_heater_cb);
   lv_obj_remove_event_cb(toggle_deck_heater_btn, toggle_deck_heater_cb);
   lv_obj_remove_event_cb(stop_btn, stop_cb);
@@ -292,7 +288,6 @@ static void scr_draw() {
   // TOGGLES SETUP
   toggle_light_btn = toggle_create(toggles_bar, TOGGLE_LIGHT);
   toggle_fan_btn = toggle_create(toggles_bar, TOGGLE_FAN);
-  toggle_grill_btn = toggle_create(toggles_bar, TOGGLE_GRILL);
   toggle_top_heater_btn = toggle_create(toggles_bar, TOGGLE_TOP_HEATER);
   toggle_deck_heater_btn = toggle_create(toggles_bar, TOGGLE_DECK_HEATER);
 
@@ -391,9 +386,6 @@ static void refresh_ui_baking_in_progress() {
 
   if (monitor_data.fan_on && !lv_obj_has_state(toggle_fan_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_fan_btn, LV_STATE_CHECKED);
   if (!monitor_data.fan_on) lv_obj_clear_state(toggle_fan_btn, LV_STATE_CHECKED);
-
-  if (monitor_data.grill_on && !lv_obj_has_state(toggle_grill_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_grill_btn, LV_STATE_CHECKED);
-  if (!monitor_data.grill_on) lv_obj_clear_state(toggle_grill_btn, LV_STATE_CHECKED);
 
   if (monitor_data.top_heater_on && !lv_obj_has_state(toggle_top_heater_btn, LV_STATE_CHECKED)) lv_obj_add_state(toggle_top_heater_btn, LV_STATE_CHECKED);
   if (!monitor_data.top_heater_on) lv_obj_clear_state(toggle_top_heater_btn, LV_STATE_CHECKED);
@@ -524,10 +516,8 @@ void toggle_light_cb(lv_event_t *e) {
   printf("[UI] LIGHT CB\n");
 
   if (monitor_data.light_on) {
-    monitor_data.light_on = false;
     q_enqueue(oven_control_q, CONTROL_OVEN_LIGHT_OFF, NULL);
   } else {
-    monitor_data.light_on = true;
     q_enqueue(oven_control_q, CONTROL_OVEN_LIGHT_ON, NULL);
   }
 }
@@ -535,40 +525,17 @@ void toggle_light_cb(lv_event_t *e) {
 void toggle_fan_cb(lv_event_t *e) {
   LV_UNUSED(e);
   if (monitor_data.fan_on) {
-    monitor_data.fan_on = false;
     q_enqueue(oven_control_q, CONTROL_OVEN_FAN_OFF, NULL);
   } else {
-    monitor_data.fan_on = true;
     q_enqueue(oven_control_q, CONTROL_OVEN_FAN_ON, NULL);
-  }
-}
-
-void toggle_grill_cb(lv_event_t *e) {
-  LV_UNUSED(e);
-  if (monitor_data.grill_on) {
-    monitor_data.grill_on = false;
-    q_enqueue(oven_control_q, CONTROL_OVEN_GRILL_OFF, NULL);
-  } else {
-    if (monitor_data.top_heater_on) {
-      monitor_data.top_heater_on = false;
-      q_enqueue(oven_control_q, CONTROL_OVEN_TOP_HEATER_OFF, NULL);
-    }
-    q_enqueue(oven_control_q, CONTROL_OVEN_GRILL_ON, NULL);
-    monitor_data.grill_on = true;
   }
 }
 
 void toggle_top_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
   if (monitor_data.top_heater_on) {
-    monitor_data.top_heater_on = false;
     q_enqueue(oven_control_q, CONTROL_OVEN_TOP_HEATER_OFF, NULL);
   } else {
-    if (monitor_data.grill_on) {
-      monitor_data.grill_on = false;
-      q_enqueue(oven_control_q, CONTROL_OVEN_GRILL_OFF, NULL);
-    }
-    monitor_data.top_heater_on = true;
     q_enqueue(oven_control_q, CONTROL_OVEN_TOP_HEATER_ON, NULL);
   }
 }
@@ -576,10 +543,8 @@ void toggle_top_heater_cb(lv_event_t *e) {
 void toggle_deck_heater_cb(lv_event_t *e) {
   LV_UNUSED(e);
   if (monitor_data.deck_heater_on) {
-    monitor_data.deck_heater_on = false;
     q_enqueue(oven_control_q, CONTROL_OVEN_DECK_HEATER_OFF, NULL);
   } else {
-    monitor_data.deck_heater_on = true;
     q_enqueue(oven_control_q, CONTROL_OVEN_DECK_HEATER_ON, NULL);
   }
 }

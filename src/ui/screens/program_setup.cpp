@@ -61,7 +61,6 @@ static counter_t duration_counter;
 /* toggles bar */
 static lv_obj_t *toggle_light_btn;
 static lv_obj_t *toggle_fan_btn;
-static lv_obj_t *toggle_grill_btn;
 static lv_obj_t *toggle_top_heater_btn;
 static lv_obj_t *toggle_deck_heater_btn;
 
@@ -115,7 +114,6 @@ static void debug_step() {
   debug("[UI] Dur M   %d\n", curr_step.duration_m);
   debug("[UI] light   %s\n", curr_step.light_on ? "on" : "off");
   debug("[UI] fan     %s\n", curr_step.fan_on ? "on" : "off");
-  debug("[UI] grill   %s\n", curr_step.grill_on ? "on" : "off");
   debug("[UI] top h   %s\n", curr_step.top_heater_on ? "on" : "off");
   debug("[UI] deck h  %s\n", curr_step.deck_heater_on ? "on" : "off");
 }
@@ -249,7 +247,6 @@ static void scr_draw() {
   // TOGGLES SETUP
   toggle_light_btn = toggle_create(toggles_bar, TOGGLE_LIGHT);
   toggle_fan_btn = toggle_create(toggles_bar, TOGGLE_FAN);
-  toggle_grill_btn = toggle_create(toggles_bar, TOGGLE_GRILL);
   toggle_top_heater_btn = toggle_create(toggles_bar, TOGGLE_TOP_HEATER);
   toggle_deck_heater_btn = toggle_create(toggles_bar, TOGGLE_DECK_HEATER);
 
@@ -381,7 +378,6 @@ static void toggles_refresh_cb(lv_event_t *e) {
   lv_imgbtn_set_state(toggle_light_btn, curr_step.light_on ? LV_IMGBTN_STATE_CHECKED_RELEASED : LV_IMGBTN_STATE_RELEASED);
   lv_imgbtn_set_state(toggle_fan_btn, curr_step.fan_on ? LV_IMGBTN_STATE_CHECKED_RELEASED : LV_IMGBTN_STATE_RELEASED);
   lv_imgbtn_set_state(toggle_top_heater_btn, curr_step.top_heater_on ? LV_IMGBTN_STATE_CHECKED_RELEASED : LV_IMGBTN_STATE_RELEASED);
-  lv_imgbtn_set_state(toggle_grill_btn, curr_step.grill_on ? LV_IMGBTN_STATE_CHECKED_RELEASED : LV_IMGBTN_STATE_RELEASED);
   lv_imgbtn_set_state(toggle_deck_heater_btn, curr_step.deck_heater_on ? LV_IMGBTN_STATE_CHECKED_RELEASED : LV_IMGBTN_STATE_RELEASED);
 }
 
@@ -413,7 +409,6 @@ static void scr_load_cb(lv_event_t *e) {
   // add toggles callbacks
   lv_obj_add_event_cb(toggle_light_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.light_on);
   lv_obj_add_event_cb(toggle_fan_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.fan_on);
-  lv_obj_add_event_cb(toggle_grill_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.grill_on);
   lv_obj_add_event_cb(toggle_top_heater_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.top_heater_on);
   lv_obj_add_event_cb(toggle_deck_heater_btn, toggle_event_cb, LV_EVENT_VALUE_CHANGED, &curr_step.deck_heater_on);
 
@@ -441,7 +436,6 @@ static void scr_unload_cb(lv_event_t *e) {
   // toggles
   lv_obj_remove_event_cb_with_user_data(toggle_light_btn, toggle_event_cb, &curr_step.light_on);
   lv_obj_remove_event_cb_with_user_data(toggle_fan_btn, toggle_event_cb, &curr_step.fan_on);
-  lv_obj_remove_event_cb_with_user_data(toggle_grill_btn, toggle_event_cb, &curr_step.grill_on);
   lv_obj_remove_event_cb_with_user_data(toggle_top_heater_btn, toggle_event_cb, &curr_step.top_heater_on);
   lv_obj_remove_event_cb_with_user_data(toggle_deck_heater_btn, toggle_event_cb, &curr_step.deck_heater_on);
 
@@ -550,16 +544,6 @@ static void toggle_event_cb(lv_event_t *e) {
     lv_obj_t *obj = lv_event_get_target(e);
     bool *flag = (bool *)lv_event_get_user_data(e);
     *flag = !*flag;
-
-    // handle grill toggle and top heater toggle as radio buttons
-    lv_obj_t *target = lv_event_get_target(e);
-    if (target == toggle_grill_btn) {
-      curr_step.top_heater_on = false;
-    }
-    if (target == toggle_top_heater_btn){
-      curr_step.grill_on = false;
-    }
-
     event_send_refresh(toggles_bar);
   }
 }
